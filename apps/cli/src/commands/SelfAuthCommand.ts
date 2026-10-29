@@ -19,7 +19,7 @@ export class SelfAuthCommand extends BaseCommand {
 	private callbackPort = parseInt(process.env.CYRUS_SERVER_PORT || "3456", 10);
 
 	async execute(_args: string[]): Promise<void> {
-		console.log("\nCyrus Linear Self-Authentication");
+		console.log("\nJingbong Linear Self-Authentication");
 		this.logDivider();
 
 		// Check required environment variables
@@ -111,7 +111,7 @@ export class SelfAuthCommand extends BaseCommand {
 			this.logSuccess(`Saved credentials for workspace: ${workspace.name}`);
 			if (!config.repositories || config.repositories.length === 0) {
 				console.log(
-					"   No repositories configured yet. Run 'cyrus self-add-repo' to add one.",
+					"   No repositories configured yet. Run 'jingbong self-add-repo' to add one.",
 				);
 			}
 
@@ -169,7 +169,7 @@ export class SelfAuthCommand extends BaseCommand {
 						.send(`<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
 <body style="font-family: system-ui; padding: 40px; text-align: center;">
-<h2>Cyrus authorized successfully</h2>
+<h2>Jingbong authorized successfully</h2>
 <p>You can close this window and return to the terminal.</p>
 </body></html>`);
 					resolve(code);

@@ -7,15 +7,10 @@ import { SentryErrorReporter } from "./SentryErrorReporter.js";
 import { scrubSentryEvent, scrubSentryLog } from "./sentryScrubber.js";
 
 /**
- * Default DSN baked into release builds. Empty until an admin creates the
- * `ceedar/cyrus-cli` Sentry project and pastes the DSN here. Sentry DSNs are
- * safe to publish — they only authorise event ingestion.
- *
- * End users may override this with the `CYRUS_SENTRY_DSN` env var, or disable
- * reporting entirely with `CYRUS_SENTRY_DISABLED=1`.
+ * No DSN is built in, so nothing is reported unless `CYRUS_SENTRY_DSN` points
+ * at your own Sentry project. `CYRUS_SENTRY_DISABLED=1` turns reporting off.
  */
-export const DEFAULT_SENTRY_DSN =
-	"https://4a343e39f7439cb5669604657fca148e@o4509685010399232.ingest.us.sentry.io/4511293576839168";
+export const DEFAULT_SENTRY_DSN = "";
 
 export interface CreateErrorReporterParams {
 	release?: string;

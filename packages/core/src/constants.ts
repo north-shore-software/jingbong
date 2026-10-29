@@ -5,11 +5,6 @@ import { join } from "node:path";
  */
 
 /**
- * Default proxy URL for Cyrus hosted services
- */
-export const DEFAULT_PROXY_URL = "https://cyrus-proxy.ceedar.workers.dev";
-
-/**
  * Default directory name for git worktrees
  */
 export const DEFAULT_WORKTREES_DIR = "worktrees";

@@ -62,11 +62,11 @@ interface WorkspaceCredentials {
  * Self-add-repo command - clones a repo and adds it to config.json
  *
  * Usage:
- *   cyrus self-add-repo                      # prompts for everything
- *   cyrus self-add-repo <url>                # prompts for workspace if multiple
- *   cyrus self-add-repo <url> <workspace>    # no prompts
- *   cyrus self-add-repo <url> -l <labels>    # custom routing labels (comma-separated)
- *   cyrus self-add-repo <url> <workspace> -l <labels>
+ *   jingbong self-add-repo                      # prompts for everything
+ *   jingbong self-add-repo <url>                # prompts for workspace if multiple
+ *   jingbong self-add-repo <url> <workspace>    # no prompts
+ *   jingbong self-add-repo <url> -l <labels>    # custom routing labels (comma-separated)
+ *   jingbong self-add-repo <url> <workspace> -l <labels>
  *
  * Routing labels are used to route Linear issues to this repository.
  * If not specified, defaults to the repository name.
@@ -186,7 +186,7 @@ export class SelfAddRepoCommand extends BaseCommand {
 
 			if (workspaces.size === 0) {
 				this.logError(
-					"No Linear credentials found. Run 'cyrus self-auth-linear' first.",
+					"No Linear credentials found. Run 'jingbong self-auth-linear' first.",
 				);
 				process.exit(1);
 			}

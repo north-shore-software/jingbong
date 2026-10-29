@@ -32,8 +32,9 @@ pnpm build
 pnpm test:packages:run
 ```
 
-Package names, the `cyrus` command and the `~/.cyrus` config directory are
-still inherited from Cyrus. The setup and configuration guides in
+The command is `jingbong` (`cyrus` still works as an alias). Package names,
+`CYRUS_*` environment variables and the `~/.cyrus` config directory are still
+inherited from Cyrus. The setup and configuration guides in
 [`docs/`](./docs) still apply:
 
 - [Self-hosting guide](./docs/SELF_HOSTING.md)

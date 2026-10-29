@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, watch } from "node:fs";
 import { dirname, join } from "node:path";
 import {
-	DEFAULT_PROXY_URL,
 	type ErrorReporter,
 	NoopErrorReporter,
 	type RepositoryConfig,
@@ -136,17 +135,10 @@ export class Application {
 	}
 
 	/**
-	 * Get proxy URL from environment or use default
+	 * OAuth proxy URL from the environment. There is no default.
 	 */
-	getProxyUrl(): string {
-		return process.env.PROXY_URL || DEFAULT_PROXY_URL;
-	}
-
-	/**
-	 * Check if using default proxy
-	 */
-	isUsingDefaultProxy(): boolean {
-		return this.getProxyUrl() === DEFAULT_PROXY_URL;
+	getProxyUrl(): string | undefined {
+		return process.env.PROXY_URL || undefined;
 	}
 
 	/**

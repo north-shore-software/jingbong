@@ -5,6 +5,7 @@
 	"main": "dist/src/app.js",
 	"types": "dist/src/app.d.ts",
 	"bin": {
+		"jingbong": "./dist/src/app.js",
 		"cyrus": "./dist/src/app.js"
 	},
 	"type": "module",

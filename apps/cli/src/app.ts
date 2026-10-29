@@ -42,12 +42,12 @@ setGlobalErrorReporter(errorReporter);
 const program = new Command();
 
 program
-	.name("cyrus")
+	.name("jingbong")
 	.description("AI-powered Linear issue automation using Claude")
 	.version(packageJson.version)
 	.option(
 		"--cyrus-home <path>",
-		"Specify custom Cyrus config directory",
+		"Specify custom config directory",
 		resolve(homedir(), ".cyrus"),
 	)
 	.option("--env-file <path>", "Path to environment variables file");

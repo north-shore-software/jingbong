@@ -79,7 +79,7 @@ export class RefreshTokenCommand extends BaseCommand {
 
 		if (workspaceStatuses.length === 0) {
 			this.logError(
-				"No Linear workspaces configured. Run 'cyrus self-auth-linear' first.",
+				"No Linear workspaces configured. Run 'jingbong self-auth-linear' first.",
 			);
 			process.exit(1);
 		}
@@ -122,6 +122,12 @@ export class RefreshTokenCommand extends BaseCommand {
 				: 3456;
 			const callbackUrl = `http://localhost:${serverPort}/callback`;
 			const proxyUrl = this.app.getProxyUrl();
+			if (!proxyUrl) {
+				this.logError(
+					"PROXY_URL is not set. Use 'jingbong self-auth-linear' to re-authorize instead.",
+				);
+				process.exit(1);
+			}
 			const oauthUrl = `${proxyUrl}/oauth/authorize?callback=${encodeURIComponent(
 				callbackUrl,
 			)}`;

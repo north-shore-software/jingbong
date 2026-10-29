@@ -1242,7 +1242,7 @@ ${reply.body}
 				{
 					headers: {
 						Accept: "application/vnd.github.v3+json",
-						"User-Agent": "Cyrus-Agent",
+						"User-Agent": "Jingbong-Agent",
 					},
 				},
 			);

@@ -103,7 +103,7 @@ export interface EdgeWorkerRuntimeConfig {
 
 	// --- Server/Network Configuration (runtime-specific) ---
 
-	/** Optional proxy URL - defaults to DEFAULT_PROXY_URL for OAuth flows */
+	/** Optional OAuth proxy URL. There is no default: self-hosted installs use self-auth. */
 	proxyUrl?: string;
 
 	/** Base URL for the server */

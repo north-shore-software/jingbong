@@ -9,7 +9,7 @@
  *
  * Resolution is **additive only** — there is no implicit appending of
  * workspace MCP tools at runtime. Anything Cyrus needs (including
- * `mcp__linear`, `mcp__cyrus-tools`, `mcp__cyrus-docs`, `mcp__slack`, and
+ * `mcp__linear`, `mcp__cyrus-tools`, `mcp__slack`, and
  * read access to repository paths) is listed here explicitly. If you remove
  * a tool from this list, Cyrus loses access to it. If you add a tool here,
  * existing teams whose column equals the previous verbatim default will be
@@ -86,7 +86,6 @@ export const LINEAR_DEFAULT_ALLOWED_TOOLS = [
 	// follow-up messages to Slack while working on an issue.
 	"mcp__linear",
 	"mcp__cyrus-tools",
-	"mcp__cyrus-docs",
 	"mcp__slack",
 ] as const;
 
@@ -130,7 +129,6 @@ export const SLACK_DEFAULT_ALLOWED_TOOLS = [
 	// Workspace MCP servers Slack chat sessions need
 	"mcp__linear",
 	"mcp__cyrus-tools",
-	"mcp__cyrus-docs",
 	"mcp__slack",
 ] as const;
 
@@ -202,7 +200,6 @@ export const GITHUB_DEFAULT_ALLOWED_TOOLS = [
 	// Workspace MCP servers GitHub sessions need
 	"mcp__linear",
 	"mcp__cyrus-tools",
-	"mcp__cyrus-docs",
 ] as const;
 
 /**

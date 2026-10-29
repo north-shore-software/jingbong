@@ -354,10 +354,7 @@ pnpm test:watch  # Watch mode
 
 # Local development setup (link development version globally)
 pnpm build                    # Build all packages first
-pnpm uninstall cyrus-ai -g    # Remove published version
-cd apps/cli                   # Navigate to CLI directory
-pnpm install -g .            # Install local version globally
-pnpm link -g .               # Link local development version
+cd apps/cli && npm link       # Put `jingbong` (and the `cyrus` alias) on PATH
 ```
 
 #### Electron App (`apps/electron/`)
