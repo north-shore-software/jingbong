@@ -5,5 +5,6 @@ export type {
 	OpenCodeJsonEvent,
 	OpenCodeRunnerConfig,
 	OpenCodeRunnerEvents,
+	OpenCodeSandboxConfig,
 	OpenCodeSessionInfo,
 } from "./types.js";

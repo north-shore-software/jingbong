@@ -30,6 +30,19 @@ export interface OpenCodeRunnerConfig extends AgentRunnerConfig {
 	 * Set to 0 to explicitly disable it.
 	 */
 	inactivityTimeoutMs?: number;
+	/**
+	 * Pass `--standalone` so OpenCode runs in-process. Its background service
+	 * ignores the per-run permission rules in OPENCODE_CONFIG_CONTENT, so set
+	 * this whenever those rules must hold.
+	 */
+	standalone?: boolean;
+	/** Run OpenCode under bubblewrap (Linux only); see buildSandboxArgs. */
+	sandbox?: OpenCodeSandboxConfig;
+}
+
+export interface OpenCodeSandboxConfig {
+	/** Paths inside cyrusHome that stay visible and writable. */
+	readWritePaths: string[];
 }
 
 export interface OpenCodeSessionInfo extends AgentSessionInfo {

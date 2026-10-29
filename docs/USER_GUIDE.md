@@ -3,8 +3,7 @@
 Jingbong is a bot that works on Linear issues. It can read and change every
 repository configured for the workspace, both public and private.
 
-> **Note:** these features currently run as patches on top of Cyrus v0.2.74
-> and are still being moved into this repository.
+Setting Jingbong up is covered in [SETUP_COMMENT_MODE.md](./SETUP_COMMENT_MODE.md).
 
 ## The basics
 
