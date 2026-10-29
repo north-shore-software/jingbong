@@ -1,0 +1,13 @@
+Jingbong
+Copyright 2026 North Shore Software
+
+This product is derived from Cyrus (https://github.com/ceedaragents/cyrus),
+Copyright Ceedar and the Cyrus contributors, licensed under the Apache
+License, Version 2.0.
+
+Jingbong was forked from Cyrus v0.2.74 (commit 5207ab4, tagged
+`cyrus-v0.2.74` in this repository). Files have been modified since then;
+`git diff cyrus-v0.2.74` shows every change made after the fork.
+
+Jingbong is an independent project. It is not affiliated with or endorsed
+by Ceedar or the Cyrus project.

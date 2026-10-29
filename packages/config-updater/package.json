@@ -4,7 +4,7 @@
 	"description": "Configuration update handlers for Cyrus agent",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/cyrusagents/cyrus.git",
+		"url": "git+https://github.com/north-shore-software/jingbong.git",
 		"directory": "packages/config-updater"
 	},
 	"type": "module",
@@ -45,5 +45,6 @@
 		"cyrus"
 	],
 	"author": "Cyrus Team",
-	"license": "MIT"
+	"license": "Apache-2.0",
+	"private": true
 }

@@ -1,8 +1,8 @@
 {
-	"name": "cyrus-monorepo",
+	"name": "jingbong",
 	"version": "1.0.1",
 	"private": true,
-	"description": "Monorepo for Cyrus - Linear Claude Agent integration",
+	"description": "Jingbong: a Linear/GitHub coding agent, derived from Cyrus",
 	"packageManager": "pnpm@10.33.1",
 	"type": "module",
 	"scripts": {
@@ -27,11 +27,11 @@
 		"agent",
 		"monorepo"
 	],
-	"author": "Ceedar",
-	"license": "MIT",
+	"author": "North Shore Software",
+	"license": "Apache-2.0",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/cyrusagents/cyrus"
+		"url": "git+https://github.com/north-shore-software/jingbong.git"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.1.3",

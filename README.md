@@ -1,89 +1,42 @@
-# Cyrus
+# Jingbong
 
-<div>
-  <a href="https://github.com/ceedaragents/cyrus/actions">
-    <img src="https://github.com/ceedaragents/cyrus/actions/workflows/ci.yml/badge.svg" alt="CI">
-  </a>
+Jingbong is a self-hosted coding agent for Linear and GitHub. It watches for
+requests on issues, creates isolated Git worktrees, runs an agent CLI (OpenCode,
+Claude Code, Codex, Gemini or Cursor) against them, and replies with its results.
 
-</div>
+## Based on Cyrus
 
-[![Discord](https://img.shields.io/discord/1443747721910685792?label=Discord&logo=discord&logoColor=white)](https://discord.gg/prrtADHYTt)
+Jingbong is a fork of [Cyrus](https://github.com/ceedaragents/cyrus) by
+[Ceedar](https://github.com/ceedaragents), and nearly all of the code here is
+their work. Thank you to the Cyrus team and contributors.
 
-Your (Claude Code|Codex|Cursor|Gemini|Opencode) powered (Linear|GitHub|GitLab|Slack) agent. Cyrus monitors (Linear|GitHub|GitLab|Slack) issues assigned to it, creates isolated Git worktrees for each issue, runs (Claude Code|Codex|Cursor|Gemini|Opencode) sessions to process them, and streams detailed agent activity updates back to (Linear|GitHub), along with rich interactions like dropdown selects and approvals.
+Jingbong is developed independently and will diverge from Cyrus over time.
+It is not affiliated with or endorsed by the Cyrus project, and changes here
+are not intended for upstream. If you are looking for a supported product,
+use Cyrus.
 
-**Note:** Cyrus is a BYOK platform (bring your keys / subscriptions) for tokens.
+- Forked from Cyrus v0.2.74 (commit `5207ab4`, tagged `cyrus-v0.2.74` here).
+- `git diff cyrus-v0.2.74` shows everything that has changed since the fork.
+- See [NOTICE](./NOTICE) for attribution.
 
----
-
-## Getting Started
-
-### End-to-End Self-Hosted (Community)
-
-Zero cost option — host everything yourself with your own Linear OAuth app, GitHub App, and Slack App. An AI-guided setup skill handles the entire onboarding: installing dependencies, configuring auth, creating integration apps, and connecting repositories — so you don't have to follow a manual guide.
-
-```bash
-npx skills add ceedaragents/cyrus -g
-```
-
-Then in any AI coding agent (Claude Code, Codex, Cursor, etc.):
-
-```
-/cyrus-setup
-```
-
-Or follow the **[manual setup guide](./docs/SELF_HOSTING.md)** if you prefer.
-
----
-
-### Pro & Team Plans
-
-Configure Cyrus through the dashboard at [app.atcyrus.com](https://app.atcyrus.com).
-
-#### For paid self-hosted deployments
-
-It is called 'self-hosted' because it uses a machine you control as the agent runtime. Networking layer and integrations are provided by the Cyrus cloud provider.
+## Development
 
 ```bash
-# Install Cyrus
-npm install -g cyrus-ai
-
-# Authenticate with your token (provided during onboarding)
-cyrus auth <your-token>
+pnpm install
+pnpm build
+pnpm test:packages:run
 ```
 
-For Cyrus to create pull requests or merge requests, configure Git and your hosting CLI. See **[Git & GitHub Setup](./docs/GIT_GITHUB.md)** or **[Git & GitLab Setup](./docs/GIT_GITLAB.md)**.
+Package names, the `cyrus` command and the `~/.cyrus` config directory are
+still inherited from Cyrus. The setup and configuration guides in
+[`docs/`](./docs) still apply:
 
-Keep Cyrus running as a persistent process:
-
-- **tmux**: `tmux new -s cyrus` then run `cyrus` (Ctrl+B, D to detach)
-- **pm2**: `pm2 start cyrus --name cyrus`
-- **systemd**: See [Running as a Service](./docs/SELF_HOSTING.md#running-as-a-service)
-
-#### For cloud-hosted deployments
-
-No installation required. Everything is managed through [app.atcyrus.com](https://app.atcyrus.com).
-
----
-
-## More Documentation
-
-- **[End-to-End Community Guide](./docs/SELF_HOSTING.md)** - Complete community manual setup
-- **[Git & GitHub Setup](./docs/GIT_GITHUB.md)** - Git and GitHub CLI configuration for PRs
-- **[Git & GitLab Setup](./docs/GIT_GITLAB.md)** - Git and GitLab CLI configuration for MRs
-- **[Zulip Setup](./docs/ZULIP.md)** - Answer @mentions in Zulip topics and DMs
-- **[Configuration Reference](./docs/CONFIG_FILE.md)** - Detailed config.json options
-- **[Cloudflare Tunnel Setup](./docs/CLOUDFLARE_TUNNEL.md)** - Expose your local instance
-- **[Setup Scripts](./docs/SETUP_SCRIPTS.md)** - Repository and global initialization scripts
-
----
+- [Self-hosting guide](./docs/SELF_HOSTING.md)
+- [Git & GitHub setup](./docs/GIT_GITHUB.md)
+- [Configuration reference](./docs/CONFIG_FILE.md)
+- [Setup scripts](./docs/SETUP_SCRIPTS.md)
 
 ## License
 
-This project is licensed under the Apache 2.0 license - see the [LICENSE](LICENSE) file for details.
-
-## Credits
-
-This project builds on the technologies built by the awesome teams at Linear, and Claude by Anthropic:
-
-- [Linear API](https://linear.app/developers)
-- [Anthropic Claude Code](https://www.claude.com/product/claude-code)
+Apache License 2.0, the same license as Cyrus. See [LICENSE](./LICENSE) and
+[NOTICE](./NOTICE).

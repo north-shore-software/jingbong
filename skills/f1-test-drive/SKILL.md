@@ -27,11 +27,6 @@ and a generic request to verify/ship are not sufficient reasons to run F1.
   validate other portions with their targeted checks. A docs, infrastructure,
   or metadata path is never an exemption for a real runtime behavior change
   (including dependencies, generated prompts, or installed defaults).
-- **Actual releases:** assess the entire released payload against the previous
-  release, not merely the version-bump PR. Runtime-bearing payloads retain
-  relevant F1 validation. Payloads with no F1-covered behavior change use the
-  non-F1 release verification described in `apps/cli/RELEASING.md`. Editing
-  release tooling is not itself preparing or publishing a functional release.
 
 If F1 is not applicable, stop this protocol before setup and reporting. If it
 is applicable but blocked, report the missing coverage and blocker honestly;

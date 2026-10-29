@@ -4,7 +4,7 @@
 	"description": "Core business logic for Cyrus",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/cyrusagents/cyrus.git",
+		"url": "git+https://github.com/north-shore-software/jingbong.git",
 		"directory": "packages/core"
 	},
 	"type": "module",
@@ -34,7 +34,6 @@
 		"tsx": "^4.23.0",
 		"vitest": "^4.1.12"
 	},
-	"publishConfig": {
-		"access": "public"
-	}
+	"private": true,
+	"license": "Apache-2.0"
 }

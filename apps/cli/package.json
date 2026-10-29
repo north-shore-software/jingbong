@@ -22,12 +22,9 @@
 		"dist",
 		"README.md"
 	],
-	"publishConfig": {
-		"access": "public"
-	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/cyrusagents/cyrus.git",
+		"url": "git+https://github.com/north-shore-software/jingbong.git",
 		"directory": "apps/cli"
 	},
 	"keywords": [
@@ -38,7 +35,7 @@
 		"cli"
 	],
 	"author": "",
-	"license": "MIT",
+	"license": "Apache-2.0",
 	"dependencies": {
 		"@linear/sdk": "^64.0.0",
 		"@sentry/node": "^10.65.0",
@@ -64,5 +61,6 @@
 		"@vitest/ui": "^4.1.12",
 		"vite": "^8.3.4",
 		"vitest": "^4.1.12"
-	}
+	},
+	"private": true
 }
