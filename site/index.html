@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>jingbong</title>
-<meta name="description" content="An imaginary friend for Linear and GitHub. It surfaces the consequences of a product change and the decisions it forces, and your team decides together in Linear, on the record.">
+<meta name="description" content="An imaginary friend for Linear and GitHub, built for async, multi-threaded development – solo or with friends. Run it in the cloud and keep building on the go from the Linear phone app.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text x='50' y='.88em' font-size='88' text-anchor='middle' font-weight='900' font-family='serif'>晶</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@900&text=%E7%B2%BE%E8%B9%A6&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@900&text=%E6%99%B6%E8%B9%A6&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
@@ -40,10 +40,26 @@
     margin: 0 0 28px;
   }
 
-  .cmds { display: flex; flex-direction: column; gap: 12px; }
-  .cmd { display: flex; flex-wrap: wrap; column-gap: 24px; }
-  .cmd b { flex: 0 0 176px; }
-  .cmd span { flex: 1 1 280px; min-width: 0; }
+  .issue { border: 1px solid #ddd; padding: 14px 16px; }
+  .issue .title { font-weight: 700; }
+  .issue p { margin-top: 6px; font-size: 14px; }
+  .step { margin-bottom: 12px; }
+
+  .thread { border: 1px solid #ddd; background: #fafafa; margin-bottom: 12px; font-size: 14px; line-height: 1.6; }
+  .c { display: flex; gap: 10px; padding: 12px 16px; }
+  .c + .c { border-top: 1px solid #eee; }
+  .c.r { padding-left: 40px; }
+  .c > div { flex: 1; min-width: 0; }
+  .av { flex: none; width: 22px; height: 22px; margin-top: 1px; display: grid; place-items: center; border: 1px solid #bbb; border-radius: 50%; background: #fff; font-size: 12px; font-weight: 700; line-height: 1; }
+  .av.bot { background: #111; border-color: #111; color: #fff; }
+  .who { font-size: 13px; }
+  .body { overflow-wrap: anywhere; }
+  .body p { margin-bottom: 6px; }
+  .body > :last-child { margin-bottom: 0; }
+  .thread li + li { margin-top: 2px; }
+  .at { font-weight: 700; }
+  .rx { display: flex; gap: 6px; margin-top: 8px; }
+  .rx span { padding: 0 8px; border: 1px solid #ddd; border-radius: 999px; background: #fff; font-size: 12px; line-height: 20px; }
 
   .box { overflow-x: auto; border: 1px solid #ddd; background: #fafafa; margin-bottom: 16px; }
   .box:last-child { margin-bottom: 0; }
@@ -67,7 +83,7 @@
   <header>
     <div class="logo" lang="zh-Hans" aria-hidden="true">晶蹦</div>
     <h1>jingbong</h1>
-    <p>An imaginary friend for Linear and GitHub. It surfaces the consequences of a product change and the decisions it forces, and your team decides together in Linear, on the record.</p>
+    <p>An imaginary friend for Linear and GitHub, built for async, multi-threaded development – solo or with friends. Run it in the cloud and keep building on the go from the Linear phone app.</p>
     <p class="muted"><a href="https://github.com/north-shore-software/jingbong">github</a> · <a href="https://github.com/north-shore-software/jingbong/blob/main/docs/USER_GUIDE.md">guide</a> · <a href="#install">full install instructions</a></p>
     <div class="box oneliner">
 <pre>curl -fsSL https://jingbong.dev/ging_gang_gong_already.sh | sh</pre>
@@ -76,108 +92,147 @@
   </header>
 
   <section>
-    <h2>## what it does</h2>
-    <p>Iterative, collaborative decision-making in Linear. jingbong runs the process and does the legwork, you and your team make the decisions.</p>
+    <h2>## how it works</h2>
+    <p>Braindump what you have. jingbong finds the sharp edges and lays out the options. Explore, discuss, and decide when you're ready, then consolidate into a new checkpoint. Repeat until everything is settled, then build.</p>
+    <p>jingbong does the legwork, you make the decisions, and Linear keeps the record.</p>
   </section>
 
   <section>
-    <h2>## commands</h2>
-    <div class="cmds">
-      <div class="cmd"><b>@jingbong cp</b><span>Checkpoint. Suggested title, what's been decided, open questions. React ✅ to write it into the issue.</span></div>
-      <div class="cmd"><b>@jingbong opt</b><span>Every reasonable option with trade-offs, no recommendation. 👍 the one you pick. Reacting 🤔 on any comment does the same.</span></div>
-      <div class="cmd"><b>@jingbong build</b><span>Implements on a new branch, runs the checks, opens one PR per changed repo. Never merges.</span></div>
-      <div class="cmd"><b>@jingbong &lt;text&gt;</b><span>Ask about the code or request work in plain words.</span></div>
+    <h2>## walkthrough</h2>
+    <p>One issue, start to finish. Mention <b>@jingbong</b> in any comment: it reacts 👀 when it picks up the request and replies in the thread.</p>
+
+    <div class="issue">
+      <div class="muted">ENG-207</div>
+      <div class="title">CSV download on reports</div>
+      <p>Reports page needs a download button, people keep copying the table into spreadsheets.</p>
     </div>
-  </section>
-
-  <section>
-    <h2>## examples</h2>
 
     <h3>### ask in plain words</h3>
-    <div class="box">
-<pre><span class="muted">ENG-207  CSV download on reports</span>
-
-sam       reports page needs a download button, people keep
-          copying the table into spreadsheets
-maya      @jingbong how does the reports table get its rows?
-          <span class="muted">👀</span>
-jingbong  ReportsTable asks /api/reports for 50 rows at a
-          time. filters and sort are query params, so the
-          server already knows what's on screen.</pre>
+    <p class="step"><b>@jingbong &lt;text&gt;</b> asks about the code or requests work in plain words.</p>
+    <div class="thread">
+      <div class="c"><span class="av">m</span><div><div class="who"><b>maya</b> <span class="muted">9:02</span></div>
+        <div class="body"><p><span class="at">@jingbong</span> how does the reports table get its rows?</p></div>
+        <div class="rx"><span>👀 1</span></div></div></div>
+      <div class="c r"><span class="av bot">j</span><div><div class="who"><b>jingbong</b> <span class="muted">9:03</span></div>
+        <div class="body"><p><code>ReportsTable</code> asks <code>/api/reports</code> for 50 rows at a time. Filters and sort are query params, so the server already knows what's on screen.</p></div></div></div>
     </div>
 
     <h3>### checkpoint</h3>
-    <div class="box">
-<pre>sam       @jingbong cp  <span class="muted">👀</span>
-jingbong  suggested title: Export reports as CSV
-          what the issue is: a button on the reports page
-          that downloads the table as a CSV.
-          done looks like:
-          - a download button above the reports table
-jingbong  open question · from checkpoint
-          export only the 50 rows on screen, or every row
-          matching the current filters?</pre>
+    <p class="step"><b>@jingbong cp</b> writes up a suggested title and what's been decided, and posts each open question as its own thread for people to answer.</p>
+    <div class="thread">
+      <div class="c"><span class="av">s</span><div><div class="who"><b>sam</b> <span class="muted">9:10</span></div>
+        <div class="body"><p><span class="at">@jingbong</span> cp</p></div>
+        <div class="rx"><span>👀 1</span></div></div></div>
+      <div class="c r"><span class="av bot">j</span><div><div class="who"><b>jingbong</b> <span class="muted">9:11</span></div>
+        <div class="body">
+          <p><b>Suggested title:</b> Export reports as CSV</p>
+          <p><b>What the issue is:</b> a button on the reports page that downloads the table as a CSV.</p>
+          <p><b>Done looks like:</b></p>
+          <ul><li>a download button above the reports table</li></ul>
+        </div></div></div>
+    </div>
+    <div class="thread">
+      <div class="c"><span class="av bot">j</span><div><div class="who"><b>jingbong</b> <span class="muted">9:11</span></div>
+        <div class="body"><p>Export only the 50 rows on screen, or every row matching the current filters?</p></div></div></div>
     </div>
 
-    <h3>### answer, then react 🤔 for options</h3>
-    <div class="box">
-<pre>  ↳ sam   every row with the filters applied. but some teams
-          have 200k rows, can a browser even do that? and
-          doesn't excel mangle accented names?
-          <span class="muted">🤔 1</span>
-jingbong  &gt; every row with the filters applied. but some...
-          question: where the CSV gets built, so it stays
-          fast for big teams and opens cleanly in excel.
-          what decides it:
-          - how many rows the biggest exports have
-          - whether people will wait, or want it sent later
-  ↳ jingbong  A. build it in the browser from paged requests
-              no server work; slow and memory-hungry at 200k
-  ↳ jingbong  B. stream it from a new /api/reports.csv
-              fast at any size; one new endpoint
-              <span class="muted">👍 1</span>
-  ↳ jingbong  C. background job, email a link when done
-              handles any size; people wait, needs storage
-  ↳ jingbong  D. export .xlsx with a spreadsheet library
-              no excel encoding trouble; new dependency</pre>
+    <h3>### options</h3>
+    <p class="step"><b>@jingbong opt</b> in a thread, or a 🤔 reaction on any comment, lays out every reasonable option as its own reply, with trade-offs and no recommendation. 👍 the one you pick.</p>
+    <div class="thread">
+      <div class="c"><span class="av bot">j</span><div><div class="who"><b>jingbong</b> <span class="muted">9:11</span></div>
+        <div class="body"><p>Export only the 50 rows on screen, or every row matching the current filters?</p></div></div></div>
+      <div class="c r"><span class="av">s</span><div><div class="who"><b>sam</b> <span class="muted">9:20</span></div>
+        <div class="body"><p>Every row with the filters applied. But some teams have 200k rows, can a browser even do that? And doesn't Excel mangle accented names?</p></div></div></div>
+      <div class="c r"><span class="av">m</span><div><div class="who"><b>maya</b> <span class="muted">9:24</span></div>
+        <div class="body"><p><span class="at">@jingbong</span> opt</p></div>
+        <div class="rx"><span>👀 1</span></div></div></div>
+    </div>
+    <div class="thread">
+      <div class="c"><span class="av bot">j</span><div><div class="who"><b>jingbong</b> <span class="muted">9:26</span></div>
+        <div class="body">
+          <p><b>Question:</b> where the CSV gets built, so it stays fast for big teams and opens cleanly in Excel.</p>
+          <p><b>What decides it:</b></p>
+          <ul>
+            <li>how many rows the biggest exports have</li>
+            <li>whether people will wait, or want it sent later</li>
+          </ul>
+        </div></div></div>
+      <div class="c r"><span class="av bot">j</span><div><div class="who"><b>jingbong</b> <span class="muted">9:26</span></div>
+        <div class="body"><p><b>Option A: build it in the browser</b> from paged requests.</p><p class="muted">No server work; slow and memory-hungry at 200k rows.</p></div></div></div>
+      <div class="c r"><span class="av bot">j</span><div><div class="who"><b>jingbong</b> <span class="muted">9:26</span></div>
+        <div class="body"><p><b>Option B: stream it</b> from a new <code>/api/reports.csv</code>.</p><p class="muted">Fast at any size; one new endpoint.</p></div>
+        <div class="rx"><span>👍 1</span></div></div></div>
+      <div class="c r"><span class="av bot">j</span><div><div class="who"><b>jingbong</b> <span class="muted">9:26</span></div>
+        <div class="body"><p><b>Option C: background job</b> that emails a link when done.</p><p class="muted">Handles any size; people wait, and it needs storage.</p></div></div></div>
+      <div class="c r"><span class="av bot">j</span><div><div class="who"><b>jingbong</b> <span class="muted">9:26</span></div>
+        <div class="body"><p><b>Option D: export .xlsx</b> with a spreadsheet library.</p><p class="muted">No Excel encoding trouble; a new dependency.</p></div></div></div>
     </div>
 
     <h3>### checkpoint until it's settled</h3>
-    <div class="box">
-<pre>sam       @jingbong cp  <span class="muted">👀</span>
-jingbong  suggested title: Export reports as CSV
-          done looks like:
-          - a download button above the reports table
-          - every row matching the current filters and sort
-          - streamed from a new /api/reports.csv
-jingbong  open question · from checkpoint
-          write a UTF-8 byte order mark, so excel shows
-          accented names correctly?
-  ↳ sam   yes
-maya      @jingbong cp  <span class="muted">👀</span>
-jingbong  suggested title: Export reports as CSV
-          done looks like:
-          - a download button above the reports table
-          - every row matching the current filters and sort
-          - streamed from a new /api/reports.csv
-          - UTF-8 with a byte order mark
-          open questions: none
-          <span class="muted">✅ 1</span>
-jingbong  ✅ applied to the title and description
-          (previous version kept in this comment)</pre>
+    <p class="step">Run <b>cp</b> again as things get decided. React ✅ on a checkpoint to write it into the issue's title and description.</p>
+    <div class="thread">
+      <div class="c"><span class="av">s</span><div><div class="who"><b>sam</b> <span class="muted">9:40</span></div>
+        <div class="body"><p><span class="at">@jingbong</span> cp</p></div>
+        <div class="rx"><span>👀 1</span></div></div></div>
+      <div class="c r"><span class="av bot">j</span><div><div class="who"><b>jingbong</b> <span class="muted">9:41</span></div>
+        <div class="body">
+          <p><b>Suggested title:</b> Export reports as CSV</p>
+          <p><b>Done looks like:</b></p>
+          <ul>
+            <li>a download button above the reports table</li>
+            <li>every row matching the current filters and sort</li>
+            <li>streamed from a new <code>/api/reports.csv</code></li>
+          </ul>
+        </div></div></div>
+    </div>
+    <div class="thread">
+      <div class="c"><span class="av bot">j</span><div><div class="who"><b>jingbong</b> <span class="muted">9:41</span></div>
+        <div class="body"><p>Write a UTF-8 byte order mark, so Excel shows accented names correctly?</p></div></div></div>
+      <div class="c r"><span class="av">s</span><div><div class="who"><b>sam</b> <span class="muted">9:45</span></div>
+        <div class="body"><p>yes</p></div></div></div>
+    </div>
+    <div class="thread">
+      <div class="c"><span class="av">m</span><div><div class="who"><b>maya</b> <span class="muted">9:50</span></div>
+        <div class="body"><p><span class="at">@jingbong</span> cp</p></div>
+        <div class="rx"><span>👀 1</span></div></div></div>
+      <div class="c r"><span class="av bot">j</span><div><div class="who"><b>jingbong</b> <span class="muted">9:51</span></div>
+        <div class="body">
+          <p><b>Suggested title:</b> Export reports as CSV</p>
+          <p><b>Done looks like:</b></p>
+          <ul>
+            <li>a download button above the reports table</li>
+            <li>every row matching the current filters and sort</li>
+            <li>streamed from a new <code>/api/reports.csv</code></li>
+            <li>UTF-8 with a byte order mark</li>
+          </ul>
+          <p><b>Open questions:</b> none</p>
+        </div>
+        <div class="rx"><span>✅ 1</span></div></div></div>
+      <div class="c r"><span class="av bot">j</span><div><div class="who"><b>jingbong</b> <span class="muted">9:52</span></div>
+        <div class="body"><p>✅ Applied to the title and description (previous version kept in this comment).</p></div></div></div>
     </div>
 
     <h3>### build</h3>
-    <div class="box">
-<pre>maya      @jingbong build  <span class="muted">👀</span>
-jingbong  🔨 building on jingbong/eng-207-export-reports-as-csv
-jingbong  opened #412, checks pass
-          - GET /api/reports.csv streams every matching row,
-            using the same filters and sort as the table
-          - "download CSV" button above ReportsTable
-          assumptions:
-          - file is named reports-&lt;date&gt;.csv
-          - button is disabled while the table is loading</pre>
+    <p class="step"><b>@jingbong build</b> implements on a new branch, runs the checks and opens one PR per changed repo. It never merges.</p>
+    <div class="thread">
+      <div class="c"><span class="av">m</span><div><div class="who"><b>maya</b> <span class="muted">10:05</span></div>
+        <div class="body"><p><span class="at">@jingbong</span> build</p></div>
+        <div class="rx"><span>👀 1</span></div></div></div>
+      <div class="c r"><span class="av bot">j</span><div><div class="who"><b>jingbong</b> <span class="muted">10:05</span></div>
+        <div class="body"><p>🔨 Building on <code>jingbong/eng-207-export-reports-as-csv</code></p></div></div></div>
+      <div class="c r"><span class="av bot">j</span><div><div class="who"><b>jingbong</b> <span class="muted">10:31</span></div>
+        <div class="body">
+          <p>Opened #412, checks pass.</p>
+          <ul>
+            <li><code>GET /api/reports.csv</code> streams every matching row, using the same filters and sort as the table</li>
+            <li>"download CSV" button above <code>ReportsTable</code></li>
+          </ul>
+          <p><b>Assumptions:</b></p>
+          <ul>
+            <li>file is named <code>reports-&lt;date&gt;.csv</code></li>
+            <li>button is disabled while the table is loading</li>
+          </ul>
+        </div></div></div>
     </div>
   </section>
 
