@@ -6,6 +6,7 @@ All notable changes to Jingbong are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- A splash page in `site/`, deployed to GitHub Pages when it changes on `main`.
 - Comment mode: mention `@jingbong` in an ordinary Linear comment and it replies in that thread, with no Linear agent session. Sessions started this way never change the issue's status.
 - `@jingbong cp` (checkpoint), `@jingbong opt` (options) and `@jingbong build` (implement and open PRs), plus the ✅, 🤔 and 👍 reactions. See the [user guide](./docs/USER_GUIDE.md).
 - Skills can be added or overridden in `~/.cyrus/skills/<name>/SKILL.md`.
