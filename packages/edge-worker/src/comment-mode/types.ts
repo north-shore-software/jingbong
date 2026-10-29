@@ -8,7 +8,10 @@ export interface CommentModeHost {
 	cyrusHome: string;
 	opencodeDefaultModel(): string | undefined;
 	/** Mints GitHub App installation tokens; null when no App is configured. */
-	gitHubAppTokenProvider(): { getToken(): Promise<string> } | null;
+	gitHubAppTokenProvider(): {
+		getToken(): Promise<string>;
+		getTokenForRepo(slug: string): Promise<string>;
+	} | null;
 }
 
 /** A skill invocation: the skill plus what the requester gave it. */
@@ -30,11 +33,12 @@ export interface SkillRunContext {
 	/** Thread to reply in; null for a new top-level comment. */
 	rootId: string | null;
 	skill: SkillRequest;
+	/** The issue's repositories, as the routing rules picked them (never empty). */
 	repos: RepositoryConfig[];
 	botId: string | undefined;
 }
 
-/** The workspace's active repositories, which skills always check out. */
+/** The workspace's active repositories: what "@handle repo" can choose from. */
 export function workspaceRepos(
 	repos: RepositoryConfig[],
 	workspaceId: string,

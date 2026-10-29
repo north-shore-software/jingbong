@@ -7,6 +7,7 @@ import {
 	type AgentSessionPromptedWebhook,
 	type CyrusAgentSession,
 	commentSessionId,
+	type Issue,
 	type RepositoryConfig,
 } from "cyrus-core";
 import { LinearIssueTrackerService } from "cyrus-linear-event-transport";
@@ -20,7 +21,7 @@ import {
 	isThinking,
 	type LinearCommentNode,
 } from "./linearApi.js";
-import { mentionsHandle, stripMentions } from "./mentions.js";
+import { commentHandle, mentionsHandle, stripMentions } from "./mentions.js";
 import { openCodeSessionModel } from "./openCodeModel.js";
 import { runReadonlySkill } from "./readonlySkill.js";
 import { commentSkillDirs, loadCommentSkill, replyRules } from "./skills.js";
@@ -29,6 +30,7 @@ import {
 	errorMessage,
 	type SkillRequest,
 	type SkillRunContext,
+	workspaceRepos,
 } from "./types.js";
 
 const run = promisify(execFile);
@@ -44,6 +46,14 @@ export interface CommentModeSessions {
 		repos: RepositoryConfig[],
 	): Promise<void>;
 	promptSession(webhook: AgentSessionPromptedWebhook): Promise<void>;
+	/** The issue's repositories by the routing rules, or null when none match. */
+	routeRepositories(
+		workspaceId: string,
+		issue: Issue,
+		repos: RepositoryConfig[],
+	): Promise<RepositoryConfig[] | null>;
+	/** Makes these the repositories later sessions on the issue use. */
+	pinRepositories(issueId: string, repos: RepositoryConfig[]): Promise<void>;
 }
 
 interface CommentWebhookData {
@@ -80,11 +90,16 @@ interface LinearWebhook {
  * - "@handle <skill> [args]" runs a skill (see skills.ts).
  * - A person's ✅ on a cp write-up applies it to the issue; 🤔 on any
  *   comment runs opt with that comment as the question.
+ * - Work goes to the repositories the routing rules pick for the issue
+ *   (description tag, project, catch-all…). When none match, the bot says so
+ *   and holds the request until "@handle repo <name…>" picks them.
  */
 export class CommentModeHandler {
 	private botIds = new Map<string, string>();
 	/** 🤔 runs claimed in this process (Linear can deliver one reaction twice). */
 	private optClaimed = new Set<string>();
+	/** Requests per issue waiting for "@handle repo" (in memory: lost on restart). */
+	private awaitingRepo = new Map<string, (() => Promise<void>)[]>();
 
 	constructor(
 		private readonly host: CommentModeHost,
@@ -221,6 +236,21 @@ export class CommentModeHandler {
 		if (!mentioned && !awaitingAnswer) return;
 
 		let prompt = stripMentions(body);
+		const repoCommand =
+			mentioned && !awaitingAnswer
+				? /^repos?(?:\s+([\s\S]*))?$/i.exec(prompt)
+				: null;
+		if (repoCommand) {
+			await this.chooseRepositories(
+				tracker,
+				workspaceId,
+				data.issueId,
+				rootId,
+				(repoCommand[1] ?? "").trim(),
+				repos,
+			);
+			return;
+		}
 		// "@handle <skill> args": a first word naming a skill runs it; anything else is an ordinary prompt
 		const skillMatch =
 			mentioned && !awaitingAnswer
@@ -270,6 +300,24 @@ export class CommentModeHandler {
 				);
 			});
 
+		// a new piece of work needs its repositories; prompts to a running session keep the session's
+		const continuing =
+			awaitingAnswer || Boolean(this.sessions.getSession(sessionId));
+		const routed = continuing
+			? repos
+			: await this.sessions.routeRepositories(workspaceId, issue, repos);
+		if (!routed) {
+			await this.holdForRepository(
+				tracker,
+				workspaceId,
+				issue,
+				rootId,
+				repos,
+				() => this.handleComment(webhook, repos),
+			);
+			return;
+		}
+
 		if (skill) {
 			const ctx: SkillRunContext = {
 				host: this.host,
@@ -279,7 +327,7 @@ export class CommentModeHandler {
 				commentId: data.id,
 				rootId,
 				skill,
-				repos,
+				repos: routed,
 				botId,
 			};
 			const runSkill = skill.build ? runBuildSkill : runReadonlySkill;
@@ -327,7 +375,7 @@ export class CommentModeHandler {
 			comment: { id: data.id, body: prompt },
 			creator,
 		};
-		if (awaitingAnswer || this.sessions.getSession(sessionId)) {
+		if (continuing) {
 			await this.sessions.promptSession({
 				type: "AgentSessionEvent",
 				action: "prompted",
@@ -421,10 +469,27 @@ export class CommentModeHandler {
 				this.optClaimed.delete(commentId);
 				return;
 			}
+			const issue = await tracker.fetchIssue(c.issue.id);
+			const routed = await this.sessions.routeRepositories(
+				workspaceId,
+				issue,
+				repos,
+			);
+			if (!routed) {
+				this.optClaimed.delete(commentId);
+				await this.holdForRepository(
+					tracker,
+					workspaceId,
+					issue,
+					c.parent?.id ?? c.id,
+					repos,
+					() => this.optFromReaction(tracker, workspaceId, commentId, repos),
+				);
+				return;
+			}
 			done[commentId] = new Date().toISOString();
 			await mkdir(dirname(ledger), { recursive: true });
 			await writeFile(ledger, JSON.stringify(done, null, 2));
-			const issue = await tracker.fetchIssue(c.issue.id);
 			this.logger.info(
 				`🤔 by ${thinkers.join(", ")} on comment ${commentId} (${issue.identifier}): running opt`,
 			);
@@ -441,13 +506,117 @@ export class CommentModeHandler {
 				commentId,
 				rootId: null,
 				skill: { ...skill, args: question, fromReaction: true, discussion },
-				repos,
+				repos: routed,
 				botId: await this.botId(workspaceId, tracker),
 			});
 		} catch (error) {
 			this.logger.error(
 				`🤔 on comment ${commentId} failed: ${error instanceof Error ? error.stack : String(error)}`,
 			);
+		}
+	}
+
+	/**
+	 * Nothing routes the issue to a repository: says so in the thread and keeps
+	 * the request, which runs once "@handle repo <name…>" picks the repositories.
+	 */
+	private async holdForRepository(
+		tracker: LinearIssueTrackerService,
+		workspaceId: string,
+		issue: Issue,
+		rootId: string,
+		repos: RepositoryConfig[],
+		retry: () => Promise<void>,
+	): Promise<void> {
+		this.awaitingRepo.set(issue.id, [
+			...(this.awaitingRepo.get(issue.id) ?? []),
+			retry,
+		]);
+		const project = await issue.project;
+		const why = project?.name
+			? `its project **${project.name}** isn't mapped to a repository`
+			: "it has no project that maps to a repository";
+		this.logger.info(
+			`No repository for ${issue.identifier} (project: ${project?.name ?? "none"}); holding the request`,
+		);
+		await tracker.createComment(issue.id, {
+			parentId: rootId,
+			body: [
+				`🤷 I don't know which repository ${issue.identifier} belongs to: ${why}.`,
+				"",
+				`Reply \`@${commentHandle()} repo <name>\` (several: \`@${commentHandle()} repo <name> <name>\`) and I'll carry on with this request. Repositories: ${repoList(workspaceRepos(repos, workspaceId))}.`,
+			].join("\n"),
+		});
+	}
+
+	/**
+	 * "@handle repo <name…>": tags the issue description with [repo=…] (the
+	 * routing rule that beats every other), pins the repositories for later
+	 * sessions and runs the requests that were waiting for them.
+	 * "@handle repo" alone says which repositories the issue uses.
+	 */
+	private async chooseRepositories(
+		tracker: LinearIssueTrackerService,
+		workspaceId: string,
+		issueId: string,
+		rootId: string,
+		args: string,
+		repos: RepositoryConfig[],
+	): Promise<void> {
+		const reply = (body: string) =>
+			tracker.createComment(issueId, { body, parentId: rootId });
+		const available = workspaceRepos(repos, workspaceId);
+		const issue = await tracker.fetchIssue(issueId);
+		const names = args.split(/[\s,]+/).filter(Boolean);
+		if (names.length === 0) {
+			const current = await this.sessions.routeRepositories(
+				workspaceId,
+				issue,
+				repos,
+			);
+			await reply(
+				current
+					? `${issue.identifier} uses ${repoList(current)}. To change it: \`@${commentHandle()} repo <name>\`. Repositories: ${repoList(available)}.`
+					: `${issue.identifier} has no repository yet. Choose one with \`@${commentHandle()} repo <name>\`. Repositories: ${repoList(available)}.`,
+			);
+			return;
+		}
+		const chosen: RepositoryConfig[] = [];
+		const unknown: string[] = [];
+		for (const name of names) {
+			const wanted = name.toLowerCase().replace(/\.git$/, "");
+			const repo = available.find(
+				(r) =>
+					r.name.toLowerCase() === wanted ||
+					r.githubUrl?.toLowerCase().endsWith(`/${wanted}`),
+			);
+			if (!repo) unknown.push(name);
+			else if (!chosen.includes(repo)) chosen.push(repo);
+		}
+		if (unknown.length > 0) {
+			await reply(
+				`⚠️ No repository called ${unknown.map((n) => `\`${n}\``).join(", ")} in this workspace. Repositories: ${repoList(available)}.`,
+			);
+			return;
+		}
+		const description =
+			`${stripRepoTags(issue.description || "")}\n\n${chosen.map((r) => `[repo=${r.name}]`).join(" ")}`.trim();
+		await tracker.updateIssue(issueId, { description });
+		await this.sessions.pinRepositories(issueId, chosen);
+		this.logger.info(
+			`${issue.identifier} routed to ${chosen.map((r) => r.name).join(", ")} by a repo command`,
+		);
+		const waiting = this.awaitingRepo.get(issueId) ?? [];
+		this.awaitingRepo.delete(issueId);
+		await reply(
+			`📌 ${issue.identifier} now uses ${repoList(chosen)} (tagged in the description).${waiting.length > 0 ? ` Carrying on with ${waiting.length === 1 ? "the waiting request" : `the ${waiting.length} waiting requests`}.` : ""}`,
+		);
+		for (const retry of waiting) {
+			await retry().catch((error) => {
+				this.logger.error(
+					`Waiting request on ${issue.identifier} failed: ${errorMessage(error)}`,
+				);
+			});
 		}
 	}
 
@@ -502,4 +671,17 @@ export class CommentModeHandler {
 			"unknown";
 		return `${commits} · session \`${runnerSessionId}\` · model \`${model}\``;
 	}
+}
+
+function repoList(repos: RepositoryConfig[]): string {
+	return repos.map((r) => `\`${r.name}\``).join(", ") || "(none configured)";
+}
+
+/** The description without [repo=…] / repo=… routing tags (see RepositoryRouter.parseRepoTagsFromDescription). */
+export function stripRepoTags(description: string): string {
+	return description
+		.replace(/\\?\[repo=[a-zA-Z0-9_\-/.#]+\\?\]/g, "")
+		.replace(/(^|[ \t])repos?=[a-zA-Z0-9_\-/.#,]+/gm, "$1")
+		.replace(/[ \t]+$/gm, "")
+		.trim();
 }

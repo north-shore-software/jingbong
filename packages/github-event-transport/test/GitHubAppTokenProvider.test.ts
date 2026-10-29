@@ -172,6 +172,43 @@ describe("GitHubAppTokenProvider", () => {
 		fetchSpy.mockRestore();
 	});
 
+	it("finds and caches the installation that covers a repository", async () => {
+		const expiresAt = new Date(Date.now() + 3600 * 1000).toISOString();
+		const json = (body: unknown) =>
+			new Response(JSON.stringify(body), {
+				status: 200,
+				headers: { "Content-Type": "application/json" },
+			});
+		const fetchSpy = vi
+			.spyOn(globalThis, "fetch")
+			.mockResolvedValueOnce(json({ id: 222 }))
+			.mockResolvedValueOnce(
+				json({ token: "ghs_other_account", expires_at: expiresAt }),
+			);
+
+		const provider = new GitHubAppTokenProvider({
+			appId: "12345",
+			installationId: "111",
+			privateKeyPath: pemPath,
+		});
+
+		expect(await provider.getTokenForRepo("someone/thing")).toBe(
+			"ghs_other_account",
+		);
+		expect(await provider.getTokenForRepo("Someone/Thing")).toBe(
+			"ghs_other_account",
+		);
+		expect(fetchSpy).toHaveBeenCalledTimes(2);
+		expect(String(fetchSpy.mock.calls[0]![0])).toBe(
+			"https://api.github.com/repos/someone/thing/installation",
+		);
+		expect(String(fetchSpy.mock.calls[1]![0])).toBe(
+			"https://api.github.com/app/installations/222/access_tokens",
+		);
+
+		fetchSpy.mockRestore();
+	});
+
 	it("throws on API error", async () => {
 		const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
 			new Response("Unauthorized", {

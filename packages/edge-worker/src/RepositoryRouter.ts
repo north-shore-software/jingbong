@@ -168,11 +168,17 @@ export class RepositoryRouter {
 		const { issueId, teamKey, issueIdentifier } =
 			this.extractIssueInfo(webhook);
 
+		// Filter repos by workspace
+		const workspaceRepos = repos.filter(
+			(repo) => repo.linearWorkspaceId === workspaceId,
+		);
+		if (workspaceRepos.length === 0) return { type: "none" };
+
 		// Priority 0: Check for existing active sessions
 		// TODO: Remove this priority check - existing session detection should not be a routing method
 		if (issueId) {
 			const activeRepos: RepositoryConfig[] = [];
-			for (const repo of repos) {
+			for (const repo of workspaceRepos) {
 				if (this.deps.hasActiveSession(issueId, repo.id)) {
 					activeRepos.push(repo);
 				}
@@ -188,12 +194,6 @@ export class RepositoryRouter {
 				};
 			}
 		}
-
-		// Filter repos by workspace
-		const workspaceRepos = repos.filter(
-			(repo) => repo.linearWorkspaceId === workspaceId,
-		);
-		if (workspaceRepos.length === 0) return { type: "none" };
 
 		// Priority 1: Check description tags [repo=...] (supports multiple, with optional #branch)
 		const descriptionTagResult = await this.findRepositoriesByDescriptionTag(
@@ -244,20 +244,20 @@ export class RepositoryRouter {
 			};
 		}
 
-		// Priority 3: Check project-based routing
+		// Priority 3: Check project-based routing (every repository listing the project)
 		if (issueId) {
-			const projectMatchedRepo = await this.findRepositoryByProject(
+			const projectMatchedRepos = await this.findRepositoriesByProject(
 				issueId,
 				workspaceRepos,
 				workspaceId,
 			);
-			if (projectMatchedRepo) {
+			if (projectMatchedRepos.length > 0) {
 				this.logger.info(
-					`Repository selected: ${projectMatchedRepo.name} (project-based routing)`,
+					`Repositories selected: [${projectMatchedRepos.map((r) => r.name).join(", ")}] (project-based routing)`,
 				);
 				return {
 					type: "selected",
-					repositories: [projectMatchedRepo],
+					repositories: projectMatchedRepos,
 					routingMethod: "project-based",
 				};
 			}
@@ -565,52 +565,46 @@ export class RepositoryRouter {
 	}
 
 	/**
-	 * Find repository by project name
+	 * Find every repository whose projectKeys include the issue's project name
 	 */
-	private async findRepositoryByProject(
+	private async findRepositoriesByProject(
 		issueId: string,
 		repos: RepositoryConfig[],
 		workspaceId: string,
-	): Promise<RepositoryConfig | null> {
-		// Try each repository that has projectKeys configured
-		for (const repo of repos) {
-			if (!repo.projectKeys || repo.projectKeys.length === 0) continue;
+	): Promise<RepositoryConfig[]> {
+		const candidates = repos.filter(
+			(repo) => repo.projectKeys && repo.projectKeys.length > 0,
+		);
+		if (candidates.length === 0) return [];
 
-			try {
-				const issueTracker = this.deps.getIssueTracker(workspaceId);
-				if (!issueTracker) {
-					this.logger.warn(
-						`No issue tracker found for workspace ${workspaceId}`,
-					);
-					continue;
-				}
-
-				const fullIssue = await issueTracker.fetchIssue(issueId);
-				const project = await fullIssue?.project;
-				if (!project?.name) {
-					this.logger.debug(
-						`No project name found for issue ${issueId} in repository ${repo.name}`,
-					);
-					continue;
-				}
-
-				const projectName = project.name;
-				if (repo.projectKeys.includes(projectName)) {
-					this.logger.debug(
-						`Matched issue ${issueId} to repository ${repo.name} via project: ${projectName}`,
-					);
-					return repo;
-				}
-			} catch (error) {
-				// Continue to next repository if this one fails
-				this.logger.debug(
-					`Failed to fetch project for issue ${issueId} from repository ${repo.name}:`,
-					error,
-				);
-			}
+		const issueTracker = this.deps.getIssueTracker(workspaceId);
+		if (!issueTracker) {
+			this.logger.warn(`No issue tracker found for workspace ${workspaceId}`);
+			return [];
 		}
 
-		return null;
+		try {
+			const fullIssue = await issueTracker.fetchIssue(issueId);
+			const project = await fullIssue?.project;
+			if (!project?.name) {
+				this.logger.debug(`No project name found for issue ${issueId}`);
+				return [];
+			}
+
+			const projectName = project.name;
+			const matched = candidates.filter((repo) =>
+				repo.projectKeys!.includes(projectName),
+			);
+			if (matched.length > 0) {
+				this.logger.debug(
+					`Matched issue ${issueId} to repositories [${matched.map((r) => r.name).join(", ")}] via project: ${projectName}`,
+				);
+			}
+			return matched;
+		} catch (error) {
+			this.logger.debug(`Failed to fetch project for issue ${issueId}:`, error);
+			return [];
+		}
 	}
 
 	/**

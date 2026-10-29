@@ -441,10 +441,12 @@ export class EdgeWorker extends EventEmitter {
 					return undefined;
 				}
 			},
-			hasActiveSession: (issueId: string, _repositoryId: string) => {
+			hasActiveSession: (issueId: string, repositoryId: string) => {
 				const activeSessions =
 					this.agentSessionManager.getActiveSessionsByIssueId(issueId);
-				return activeSessions.length > 0;
+				return activeSessions.some((session) =>
+					session.repositories.some((r) => r.repositoryId === repositoryId),
+				);
 			},
 			getIssueTracker: (linearWorkspaceId: string) => {
 				return this.getIssueTrackerForWorkspace(linearWorkspaceId);
@@ -478,6 +480,33 @@ export class EdgeWorker extends EventEmitter {
 					this.handleAgentSessionCreatedWebhook(webhook, repos),
 				promptSession: (webhook) =>
 					this.handleUserPromptedAgentActivity(webhook),
+				routeRepositories: async (workspaceId, issue, repos) => {
+					const team = await issue.team;
+					const result =
+						await this.repositoryRouter.determineRepositoryForWebhook(
+							{
+								type: "AgentSessionEvent",
+								action: "created",
+								organizationId: workspaceId,
+								agentSession: {
+									issue: {
+										id: issue.id,
+										identifier: issue.identifier,
+										team: team ? { key: team.key } : undefined,
+									},
+								},
+							} as unknown as AgentSessionCreatedWebhook,
+							repos,
+						);
+					return result.type === "selected" ? result.repositories : null;
+				},
+				pinRepositories: async (issueId, repos) => {
+					this.repositoryRouter.getIssueRepositoryCache().set(
+						issueId,
+						repos.map((r) => r.id),
+					);
+					await this.savePersistedState();
+				},
 			},
 		);
 

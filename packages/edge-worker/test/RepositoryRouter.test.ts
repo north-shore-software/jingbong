@@ -484,6 +484,37 @@ describe("RepositoryRouter", () => {
 				expectRouting(result).shouldSelectRepository(repo1);
 			});
 
+			it("should ignore active sessions in another workspace's repositories", async () => {
+				// Given: An active session in a repo of workspace-2, and a project-matched repo in workspace-1
+				const otherRepo = env
+					.repository("repo-other", "Other Workspace Repo")
+					.inWorkspace("workspace-2")
+					.build();
+				const projectRepo = env
+					.repository("repo-project", "Project Repo")
+					.inWorkspace("workspace-1")
+					.withProjects("Spock")
+					.build();
+
+				env.issueHasActiveSessionIn("issue-1", "repo-other");
+				env.issueIsInProject("issue-1", "Spock");
+
+				const webhook = env
+					.webhook()
+					.inWorkspace("workspace-1")
+					.forIssue("issue-1", "F-1")
+					.build();
+
+				// When: Determining repository
+				const result = await env.router.determineRepositoryForWebhook(webhook, [
+					otherRepo,
+					projectRepo,
+				]);
+
+				// Then: The other workspace's session doesn't count
+				expectRouting(result).shouldSelectRepository(projectRepo);
+			});
+
 			it("should skip active session check when issue has no active sessions", async () => {
 				// Given: An issue with no active sessions
 				const repo = env
@@ -1126,6 +1157,33 @@ describe("RepositoryRouter", () => {
 					mobileRepo,
 					"project-based",
 				);
+			});
+
+			it("should select every repository listing the issue's project", async () => {
+				const gameRepo = env
+					.repository("repo-1", "Game Repo")
+					.withProjects("Raise!")
+					.build();
+				const agentRepo = env
+					.repository("repo-2", "Agent Repo")
+					.withProjects("Agent Smith", "Raise!")
+					.build();
+				const otherRepo = env
+					.repository("repo-3", "Other Repo")
+					.withProjects("Spock")
+					.build();
+
+				env.issueIsInProject("issue-1", "Raise!");
+
+				const webhook = env.webhook().forIssue("issue-1", "F-204").build();
+
+				const result = await env.router.determineRepositoryForWebhook(webhook, [
+					gameRepo,
+					agentRepo,
+					otherRepo,
+				]);
+
+				expectRouting(result).shouldSelectRepositories([gameRepo, agentRepo]);
 			});
 
 			it("should continue to next priority when issue has no project", async () => {
