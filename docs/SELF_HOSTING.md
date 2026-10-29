@@ -2,7 +2,15 @@
 
 ## Quick Start (Recommended)
 
-If you're using an AI coding agent (Claude Code, Codex, Cursor, etc.), clone this repo and open your agent in it. The setup skills are in `skills/` (Claude Code picks them up from `.claude/skills/`). Then run:
+Install Jingbong (needs git and Node.js 18+):
+
+```bash
+curl -fsSL https://jingbong.dev/ging_gang_gong_already.sh | sh
+```
+
+This clones the repo to `~/jingbong` (set `JINGBONG_DIR` to change it), builds it, and puts the `jingbong` command on your PATH.
+
+Then open your AI coding agent (Claude Code, Codex, Cursor, etc.) in `~/jingbong`. The setup skills are in `skills/` (Claude Code picks them up from `.claude/skills/`). Run:
 
 ```
 /jingbong-setup
@@ -162,7 +170,13 @@ LINEAR_WEBHOOK_SECRET=lin_whs_s56dlmfhg72038474nmfojhsn7
 
 ### 4.1 Install Jingbong
 
-Jingbong isn't published to npm; build it from source:
+Jingbong isn't published to npm; build it from source. The one-line installer does this for you:
+
+```bash
+curl -fsSL https://jingbong.dev/ging_gang_gong_already.sh | sh
+```
+
+Or run the steps yourself:
 
 ```bash
 git clone https://github.com/north-shore-software/jingbong.git ~/jingbong
