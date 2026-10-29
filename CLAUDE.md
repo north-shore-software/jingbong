@@ -509,10 +509,7 @@ live on long after they stop doing anything.
 
 ## Development Workflow
 
-When submitting a pull request:
-
-1. Add a short entry to `CHANGELOG.md` under `## [Unreleased]` (`### Added`, `### Changed`, `### Fixed`, `### Removed`), written from the point of view of someone running Jingbong rather than in terms of internal implementation details.
-2. Run the relevant checks per the verification policy above; use `pnpm test:packages:run` when package-wide coverage is warranted, and `pnpm typecheck` / `pnpm build` when affected or required by hooks/CI.
+When submitting a pull request, run the relevant checks per the verification policy above; use `pnpm test:packages:run` when package-wide coverage is warranted, and `pnpm typecheck` / `pnpm build` when affected or required by CI.
 
 ## Key Code Paths
 
