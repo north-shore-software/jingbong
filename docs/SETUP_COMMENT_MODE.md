@@ -8,7 +8,7 @@ covers what the host running Jingbong needs.
 ## Linear
 
 - Authorize the Linear OAuth app with `scope=read,write&actor=app` and no
-  `app:mentionable` or `app:assignable` scope (`cyrus self-auth` does this).
+  `app:mentionable` or `app:assignable` scope (`jingbong self-auth-linear` does this).
   With those scopes Linear opens an agent session on every mention.
   Without them, Jingbong can no longer be assigned issues or picked from the
   @-mention menu, so people type `@jingbong` themselves.

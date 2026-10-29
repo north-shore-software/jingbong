@@ -38,7 +38,7 @@ export class StartCommand extends BaseCommand {
 				});
 			} else {
 				this.logger.info("\n⏸️  No repositories configured");
-				this.logger.info("   Add one with: cyrus self-add-repo <git-url>");
+				this.logger.info("   Add one with: jingbong self-add-repo <git-url>");
 			}
 			this.logger.divider(70);
 

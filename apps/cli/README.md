@@ -1,46 +1,36 @@
-# cyrus-ai
+# jingbong (CLI)
 
-AI development agent for Linear powered by Claude Code.
+The Jingbong command-line app: the edge worker plus setup commands. `cyrus` is
+kept as an alias of `jingbong`.
 
 ## Installation
 
+Jingbong isn't published to npm. Build it from the repository root, then link
+the CLI:
+
 ```bash
-npm install -g cyrus-ai
+pnpm install
+pnpm build
+cd apps/cli && npm link
 ```
 
 ## Usage
 
 ### Start the agent
 ```bash
-cyrus
+jingbong
 ```
 
 ### Available Commands
 
-- **`cyrus`** - Start the edge worker (default)
-- **`cyrus add-repository`** - Add a new repository configuration
-- **`cyrus check-tokens`** - Check the status of all Linear tokens
-- **`cyrus refresh-token`** - Refresh a specific Linear token
+- **`jingbong`** - Start the edge worker (default)
+- **`jingbong self-auth-linear`** - Authorize a Linear workspace with your own OAuth app
+- **`jingbong self-add-repo [url] [workspace]`** - Clone a repository and add it to the configuration
+- **`jingbong check-tokens`** - Check the status of all Linear tokens
+- **`jingbong refresh-token`** - Refresh a Linear token (needs `PROXY_URL`)
 
-### Adding Repositories
-
-After initial setup, you can add additional repositories without restarting Cyrus:
-
-```bash
-cyrus add-repository
-```
-
-This command will:
-1. Check for existing Linear credentials and reuse them if available
-2. Start OAuth flow only if no credentials are found
-3. Guide you through configuring the new repository
-4. Save the updated configuration
-
-The interactive wizard will prompt you for:
-- Repository path (must be absolute)
-- Base branch (defaults to 'main')
-- Workspace directory for git worktrees
-- Whether the repository is active
+You can add repositories while Jingbong is running; it watches
+`~/.cyrus/config.json` and picks up the change.
 
 ## Configuration
 

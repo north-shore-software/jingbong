@@ -1,7 +1,6 @@
 import type { ILogger } from "cyrus-core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { BROWSER_USE_PROMPT_ADDENDUM } from "../src/prompts/browserUsePromptAddendum.js";
-import { FAILURE_MODE_PROMPT_ADDENDUM } from "../src/prompts/failureModePromptAddendum.js";
 import { GITHUB_CLI_MEDIA_PROMPT_ADDENDUM } from "../src/prompts/githubCliMediaPromptAddendum.js";
 import {
 	type IChatToolResolver,
@@ -94,13 +93,13 @@ describe("RunnerConfigBuilder prompt addenda", () => {
 
 	it("always adds GitHub media guidance to chat prompts while browser use remains disabled", () => {
 		expect(buildChatPrompt(makeBuilder())).toBe(
-			`Base prompt.\n\n${FAILURE_MODE_PROMPT_ADDENDUM}\n\n${GITHUB_CLI_MEDIA_PROMPT_ADDENDUM}`,
+			`Base prompt.\n\n${GITHUB_CLI_MEDIA_PROMPT_ADDENDUM}`,
 		);
 	});
 
 	it("always adds GitHub media guidance to issue prompts while browser use remains disabled", () => {
 		expect(buildIssuePrompt(makeBuilder())).toBe(
-			`Base prompt.\n\n${FAILURE_MODE_PROMPT_ADDENDUM}\n\n${GITHUB_CLI_MEDIA_PROMPT_ADDENDUM}`,
+			`Base prompt.\n\n${GITHUB_CLI_MEDIA_PROMPT_ADDENDUM}`,
 		);
 	});
 
@@ -108,7 +107,7 @@ describe("RunnerConfigBuilder prompt addenda", () => {
 		process.env.CYRUS_BROWSER_USE_ENABLED = "true";
 
 		expect(buildChatPrompt(makeBuilder())).toBe(
-			`Base prompt.\n\n${FAILURE_MODE_PROMPT_ADDENDUM}\n\n${BROWSER_USE_PROMPT_ADDENDUM}\n\n${GITHUB_CLI_MEDIA_PROMPT_ADDENDUM}`,
+			`Base prompt.\n\n${BROWSER_USE_PROMPT_ADDENDUM}\n\n${GITHUB_CLI_MEDIA_PROMPT_ADDENDUM}`,
 		);
 	});
 });

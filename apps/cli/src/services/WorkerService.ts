@@ -66,7 +66,7 @@ export class WorkerService {
 		await this.startPreWorkerServer({
 			headerLine: "⏳ Waiting for configuration from server...",
 			footerLines: (appUrl) => [
-				"Your Cyrus instance is ready to receive configuration.",
+				"Your Jingbong instance is ready to receive configuration.",
 				`Complete setup at: ${appUrl}/onboarding`,
 			],
 		});
@@ -81,7 +81,7 @@ export class WorkerService {
 			headerLine: "⏸️  No repositories configured",
 			footerLines: (appUrl) =>
 				process.env.LINEAR_CLIENT_ID
-					? ["Add a repository with: cyrus self-add-repo <git-url>"]
+					? ["Add a repository with: jingbong self-add-repo <git-url>"]
 					: [
 							`Waiting for repository configuration from ${appUrl}`,
 							`Add repositories at: ${appUrl}/repos`,

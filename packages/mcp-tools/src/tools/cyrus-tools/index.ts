@@ -9,11 +9,6 @@ import { registerImageTools } from "../image-tools/index.js";
 import { registerSoraTools } from "../sora-tools/index.js";
 import { registerGetAgentSessionContentsTool } from "./get-agent-session-contents.js";
 import {
-	type FailureModesHttpClient,
-	type ResolveSessionFromCwd,
-	registerLogFailureModeTool,
-} from "./log-failure-mode.js";
-import {
 	type CodexMessagePublisher,
 	registerPostMessageToCodexTool,
 } from "./post-message-to-codex.js";
@@ -106,15 +101,6 @@ export interface CyrusToolsOptions {
 	 * The ID of the current parent session (if any)
 	 */
 	parentSessionId?: string;
-
-	/**
-	 * Optional dependencies for the `log_failure_mode` tool. When omitted,
-	 * the tool is not registered (e.g. in CLI mode without a control plane).
-	 */
-	failureModes?: {
-		resolveSessionFromCwd: ResolveSessionFromCwd;
-		httpClient: FailureModesHttpClient;
-	};
 }
 
 /**
@@ -810,17 +796,6 @@ export function createCyrusToolsServer(
 			}
 		},
 	);
-
-	// Register the log_failure_mode tool whenever the harness wires it up
-	// (EdgeWorker provides the cwd→session resolver and an HTTP client to
-	// cyrus-hosted). Omitted in CLI mode where there is no control plane.
-	if (options.failureModes) {
-		registerLogFailureModeTool(server, {
-			resolveSessionFromCwd: options.failureModes.resolveSessionFromCwd,
-			httpClient: options.failureModes.httpClient,
-			fallbackSessionId: options.parentSessionId,
-		});
-	}
 
 	// Register OpenAI-based tools if OPENAI_API_KEY is available
 	const openaiApiKey = process.env.OPENAI_API_KEY;

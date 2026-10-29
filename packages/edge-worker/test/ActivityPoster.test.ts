@@ -47,8 +47,7 @@ describe("ActivityPoster", () => {
 		expect(result).toContain(
 			"The setup script does not run with sudo privileges.",
 		);
-		expect(result).toContain("Settings > Packages (`/settings/packages`)");
-		expect(result).toContain("self-hosted Cyrus");
+		expect(result).toContain("preinstall privileged dependencies");
 	});
 
 	it("does not add sudo guidance to non-sudo repo setup hook failures", async () => {

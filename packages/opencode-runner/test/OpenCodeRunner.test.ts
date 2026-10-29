@@ -230,7 +230,7 @@ process.stdout.write(${JSON.stringify(fixtureLines())});`,
 		expect(existsSync(captureFile)).toBe(false);
 		expect(errors).toHaveLength(1);
 		expect(errors[0]?.message).toBe(
-			'Invalid OpenCode model selector "opencode/kimi-k2.7-code". Use a provider-qualified OpenCode model such as "openai/gpt-5.5" in runner config or select it with the Cyrus label "opencode/openai/gpt-5.5".',
+			'Invalid OpenCode model selector "opencode/kimi-k2.7-code". Use a provider-qualified OpenCode model such as "openai/gpt-5.5" in runner config or select it with the label "opencode/openai/gpt-5.5".',
 		);
 		const result = runner.getMessages().at(-1) as SDKResultMessage;
 		expect(result).toMatchObject({

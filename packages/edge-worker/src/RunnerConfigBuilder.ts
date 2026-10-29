@@ -23,7 +23,6 @@ import { buildIntentToAddHook } from "./hooks/IntentToAddHook.js";
 import { buildPrMarkerHook } from "./hooks/PrMarkerHook.js";
 import { appendBrowserUseAddendum } from "./prompts/browserUsePromptAddendum.js";
 import { appendCloudRuntimeAddendum } from "./prompts/cloudRuntimePromptAddendum.js";
-import { appendFailureModeAddendum } from "./prompts/failureModePromptAddendum.js";
 import { appendGitHubCliMediaAddendum } from "./prompts/githubCliMediaPromptAddendum.js";
 
 /**
@@ -316,9 +315,7 @@ export class RunnerConfigBuilder {
 			autoMemoryDirectory,
 			appendSystemPrompt: appendCloudRuntimeAddendum(
 				appendGitHubCliMediaAddendum(
-					appendBrowserUseAddendum(
-						appendFailureModeAddendum(input.systemPrompt),
-					),
+					appendBrowserUseAddendum(input.systemPrompt),
 				),
 			),
 			...(mcpConfig ? { mcpConfig } : {}),
@@ -468,9 +465,7 @@ export class RunnerConfigBuilder {
 			strictMcpConfig: input.strictMcpConfig ?? true,
 			appendSystemPrompt: appendCloudRuntimeAddendum(
 				appendGitHubCliMediaAddendum(
-					appendBrowserUseAddendum(
-						appendFailureModeAddendum(input.systemPrompt),
-					),
+					appendBrowserUseAddendum(input.systemPrompt),
 				),
 			),
 			// Priority order: label override > repository config > global default
