@@ -3,288 +3,127 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Jingbong</title>
-<meta name="description" content="Jingbong is a self-hosted coding agent for Linear and GitHub. Mention it on an issue and it checkpoints the discussion, lays out options, and opens pull requests.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔔</text></svg>">
+<title>jingbong</title>
+<meta name="description" content="A self-hosted agent for Linear and GitHub that works out the consequences of a change before it writes any code.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text x='50' y='.88em' font-size='88' text-anchor='middle' font-weight='900' font-family='serif'>精</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@900&text=%E7%B2%BE%E8%B9%A6&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #f6f3ec;
-    --surface: #fffdf8;
-    --ink: #1d1b17;
-    --muted: #6b655a;
-    --line: #e2dccf;
-    --accent: #c2410c;
-    --accent-soft: #fbe6d6;
-    --code-bg: #efe9dc;
-    --shadow: 0 1px 2px rgb(0 0 0 / .04), 0 8px 24px rgb(0 0 0 / .06);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg: #151412;
-      --surface: #1e1c19;
-      --ink: #f1ece2;
-      --muted: #a39b8c;
-      --line: #322f2a;
-      --accent: #fb923c;
-      --accent-soft: #3a2415;
-      --code-bg: #2a2723;
-      --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .35);
-    }
-  }
-  :root[data-theme="dark"] {
-    --bg: #151412;
-    --surface: #1e1c19;
-    --ink: #f1ece2;
-    --muted: #a39b8c;
-    --line: #322f2a;
-    --accent: #fb923c;
-    --accent-soft: #3a2415;
-    --code-bg: #2a2723;
-    --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .35);
-  }
-
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
   body {
     margin: 0;
-    background: var(--bg);
-    color: var(--ink);
-    font: 16px/1.6 Inter, system-ui, sans-serif;
+    background: #fff;
+    color: #111;
+    font: 15px/1.7 "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   }
-  a { color: inherit; text-decoration-color: var(--accent); text-underline-offset: 3px; }
-  a:hover { color: var(--accent); }
-  code, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .9em; }
-  code { background: var(--code-bg); padding: .1em .35em; border-radius: 4px; }
+  a { color: #111; }
+  a:hover { color: #666; }
+  main { max-width: 680px; margin: 0 auto; padding: 80px 20px 64px; }
+  h1, h2 { font-size: 15px; font-weight: 700; margin: 0 0 16px; }
+  p { margin: 0 0 16px; }
+  p:last-child { margin-bottom: 0; }
+  section, header { margin-bottom: 56px; }
+  .muted { color: #666; }
 
-  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
-  @media (max-width: 600px) { .wrap { padding: 0 16px; } }
-
-  nav { display: flex; justify-content: space-between; align-items: center; padding: 24px 0; }
-  .brand { font-family: Fraunces, serif; font-weight: 700; font-size: 1.25rem; text-decoration: none; }
-  nav .links { display: flex; gap: 20px; font-size: .95rem; }
-  nav .links a { text-decoration: none; color: var(--muted); }
-  nav .links a:hover { color: var(--ink); }
-
-  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 56px; align-items: center; padding: 56px 0 88px; }
-  @media (max-width: 860px) { .hero { grid-template-columns: 1fr; gap: 40px; padding: 24px 0 64px; } }
-  h1 {
-    font-family: Fraunces, serif; font-weight: 700;
-    font-size: clamp(2.4rem, 6vw, 3.8rem); line-height: 1.05; letter-spacing: -.02em;
-    margin: 0 0 20px;
+  .logo {
+    font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
+    font-weight: 900;
+    font-size: clamp(88px, 22vw, 168px);
+    line-height: 1;
+    letter-spacing: .02em;
+    margin: 0 0 28px;
   }
-  h1 em { font-style: normal; color: var(--accent); }
-  .lede { font-size: 1.15rem; color: var(--muted); margin: 0 0 32px; max-width: 34em; }
-  .cta { display: flex; flex-wrap: wrap; gap: 12px; }
-  .btn {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 12px 20px; border-radius: 10px; font-weight: 600; text-decoration: none;
-    border: 1px solid var(--line); background: var(--surface);
-  }
-  .btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-  .btn.primary:hover { color: var(--bg); opacity: .9; }
 
-  /* Mock issue thread */
-  .thread {
-    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
-    box-shadow: var(--shadow); padding: 20px; font-size: .92rem;
-  }
-  .issue-title { font-weight: 600; padding-bottom: 14px; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
-  .issue-title span { color: var(--muted); font-weight: 500; margin-right: 6px; }
-  .comment { display: grid; grid-template-columns: 28px 1fr; gap: 10px; margin-bottom: 14px; }
-  .comment:last-child { margin-bottom: 0; }
-  .avatar {
-    width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
-    font-size: .75rem; font-weight: 600; background: var(--code-bg); color: var(--muted);
-  }
-  .avatar.bot { background: var(--accent); color: #fff; }
-  .who { font-weight: 600; font-size: .85rem; }
-  .who small { color: var(--muted); font-weight: 400; margin-left: 6px; }
-  .body { margin-top: 2px; }
-  .mention { color: var(--accent); font-weight: 600; }
-  .reacts { display: flex; gap: 6px; margin-top: 6px; }
-  .react { font-size: .8rem; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); background: var(--bg); }
-  .reply { margin-left: 38px; padding-left: 12px; border-left: 2px solid var(--line); }
-  .card { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin-top: 4px; }
-  .card b { display: block; }
-  .card ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); }
+  .cmds { display: flex; flex-direction: column; gap: 12px; }
+  .cmd { display: flex; flex-wrap: wrap; column-gap: 24px; }
+  .cmd b { flex: 0 0 176px; }
+  .cmd span { flex: 1 1 280px; min-width: 0; }
 
-  section { padding: 72px 0; border-top: 1px solid var(--line); }
-  h2 { font-family: Fraunces, serif; font-weight: 700; font-size: clamp(1.7rem, 4vw, 2.3rem); letter-spacing: -.01em; margin: 0 0 12px; }
-  .sub { color: var(--muted); margin: 0 0 40px; max-width: 40em; }
+  .box { overflow-x: auto; border: 1px solid #ddd; background: #fafafa; margin-bottom: 16px; }
+  .box:last-child { margin-bottom: 0; }
+  pre { margin: 0; padding: 16px 20px; font: inherit; font-size: 14px; }
 
-  .cmds { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
-  .cmd { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
-  .cmd .mono { display: inline-block; color: var(--accent); font-weight: 500; margin-bottom: 10px; }
-  .cmd h3 { margin: 0 0 6px; font-size: 1.05rem; }
-  .cmd p { margin: 0; color: var(--muted); font-size: .95rem; }
+  ul { margin: 0; padding-left: 20px; }
+  li + li { margin-top: 6px; }
 
-  .flow { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0; counter-reset: step; }
-  .flow li { counter-increment: step; padding: 0 20px 24px 0; position: relative; }
-  .flow li::before {
-    content: counter(step); display: grid; place-items: center;
-    width: 32px; height: 32px; border-radius: 50%; margin-bottom: 12px;
-    background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: .9rem;
-  }
-  .flow b { display: block; margin-bottom: 4px; }
-  .flow span { color: var(--muted); font-size: .95rem; }
-
-  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 28px 40px; }
-  .facts h3 { margin: 0 0 6px; font-size: 1rem; }
-  .facts p { margin: 0; color: var(--muted); font-size: .95rem; }
-
-  pre {
-    background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
-    padding: 20px; overflow-x: auto; margin: 0 0 20px; font-size: .9rem; line-height: 1.7;
-  }
-  pre code { background: none; padding: 0; }
-  pre .c { color: var(--muted); }
-
-  footer { border-top: 1px solid var(--line); padding: 40px 0 56px; color: var(--muted); font-size: .9rem; }
-  footer p { margin: 0 0 8px; max-width: 46em; }
+  footer { border-top: 1px solid #ddd; padding-top: 24px; color: #666; font-size: 13px; }
+  footer p { margin-bottom: 8px; }
 </style>
 </head>
 <body>
-  <div class="wrap">
-    <nav>
-      <a class="brand" href="./">Jingbong</a>
-      <div class="links">
-        <a href="https://github.com/north-shore-software/jingbong/blob/main/docs/USER_GUIDE.md">Guide</a>
-        <a href="https://github.com/north-shore-software/jingbong">GitHub</a>
-      </div>
-    </nav>
+<main>
 
-    <header class="hero">
-      <div>
-        <h1>A teammate that lives in your <em>issue&nbsp;threads</em>.</h1>
-        <p class="lede">Jingbong is a self-hosted coding agent for Linear and GitHub. Mention it on an issue and it sums up the discussion, lays out your options, and opens the pull request.</p>
-        <div class="cta">
-          <a class="btn primary" href="https://github.com/north-shore-software/jingbong">View on GitHub</a>
-          <a class="btn" href="https://github.com/north-shore-software/jingbong/blob/main/docs/USER_GUIDE.md">Read the guide</a>
-        </div>
-      </div>
-
-      <div class="thread" aria-label="Example issue thread">
-        <div class="issue-title"><span>ENG-142</span>Retry failed webhook deliveries</div>
-
-        <div class="comment">
-          <div class="avatar">MK</div>
-          <div>
-            <div class="who">Maya</div>
-            <div class="body"><span class="mention">@jingbong</span> cp</div>
-            <div class="reacts"><span class="react">👀</span></div>
-          </div>
-        </div>
-
-        <div class="comment reply">
-          <div class="avatar bot">J</div>
-          <div>
-            <div class="who">Jingbong <small>bot</small></div>
-            <div class="card">
-              <b>Suggested title: Retry webhooks with exponential backoff</b>
-              <ul>
-                <li>Up to 5 attempts, capped at 1 hour</li>
-                <li>Dead-letter after the final failure</li>
-              </ul>
-            </div>
-            <div class="reacts"><span class="react">✅ 1</span></div>
-          </div>
-        </div>
-
-        <div class="comment">
-          <div class="avatar">MK</div>
-          <div>
-            <div class="who">Maya</div>
-            <div class="body"><span class="mention">@jingbong</span> build</div>
-          </div>
-        </div>
-
-        <div class="comment reply">
-          <div class="avatar bot">J</div>
-          <div>
-            <div class="who">Jingbong <small>bot</small></div>
-            <div class="body">Opened <span class="mono">#318</span> on <span class="mono">jingbong/eng-142-retry-webhooks</span>. Checks pass.</div>
-          </div>
-        </div>
-      </div>
-    </header>
-  </div>
+  <header>
+    <div class="logo" lang="zh-Hans" aria-hidden="true">精蹦</div>
+    <h1>jingbong</h1>
+    <p>A self-hosted agent for Linear and GitHub that works out the consequences of a change before it writes any code.</p>
+    <p class="muted"><a href="https://github.com/north-shore-software/jingbong">github</a> · <a href="https://github.com/north-shore-software/jingbong/blob/main/docs/USER_GUIDE.md">guide</a> · <a href="https://github.com/north-shore-software/jingbong/blob/main/docs/SELF_HOSTING.md">self-hosting</a></p>
+  </header>
 
   <section>
-    <div class="wrap">
-      <h2>Three commands, plain words for the rest</h2>
-      <p class="sub">Write <code>@jingbong</code> in a comment. A 👀 means it picked up the request, and it replies in the same thread.</p>
-      <div class="cmds">
-        <div class="cmd">
-          <span class="mono">@jingbong cp</span>
-          <h3>Checkpoint</h3>
-          <p>Reads the whole issue and replies with a suggested title, a write-up of what's been decided, and the open questions. React ✅ to copy it into the issue.</p>
-        </div>
-        <div class="cmd">
-          <span class="mono">@jingbong opt</span>
-          <h3>Options</h3>
-          <p>Lays out every reasonable way to settle a question, with pros and cons and no recommendation. 👍 the one you pick. Or just react 🤔 on any comment.</p>
-        </div>
-        <div class="cmd">
-          <span class="mono">@jingbong build</span>
-          <h3>Build</h3>
-          <p>Implements the issue on a fresh branch, runs the checks, and opens one PR per changed repo. It never merges; that's up to you.</p>
-        </div>
-        <div class="cmd">
-          <span class="mono">@jingbong &lt;anything&gt;</span>
-          <h3>Ask</h3>
-          <p>Ask a question about the code or request work in plain words. It can read every repository configured for the workspace.</p>
-        </div>
-      </div>
+    <h2>## what it does</h2>
+    <p>You ask for X. Before touching the repo, jingbong works out what X implies: the choices it forces (A, B or C) and what else moves (doing X makes Z re-derive into Y). It posts that on the issue and waits for someone to decide.</p>
+    <p class="muted">It's meant for codebases that already work. On a blank repo, sane defaults are fine. On an established one they're how silent drift happens.</p>
+  </section>
+
+  <section>
+    <h2>## commands</h2>
+    <div class="cmds">
+      <div class="cmd"><b>@jingbong cp</b><span>Checkpoint. Suggested title, what's been decided, open questions. React ✅ to write it into the issue.</span></div>
+      <div class="cmd"><b>@jingbong opt</b><span>Every reasonable option with trade-offs, no recommendation. 👍 the one you pick. Reacting 🤔 on any comment does the same.</span></div>
+      <div class="cmd"><b>@jingbong build</b><span>Implements on a new branch, runs the checks, opens one PR per changed repo. Never merges.</span></div>
+      <div class="cmd"><b>@jingbong &lt;text&gt;</b><span>Ask about the code or request work in plain words.</span></div>
     </div>
   </section>
 
   <section>
-    <div class="wrap">
-      <h2>From discussion to pull request</h2>
-      <p class="sub">The suggested flow keeps the issue description as the single source of truth.</p>
-      <ol class="flow">
-        <li><b>Discuss</b><span>Talk it through on the issue as usual.</span></li>
-        <li><b>Checkpoint</b><span><code>@jingbong cp</code> sums up and asks what's still open.</span></li>
-        <li><b>Decide</b><span>Answer in-thread. Stuck? <code>opt</code> or 🤔.</span></li>
-        <li><b>Apply</b><span>✅ the write-up to update the title and description.</span></li>
-        <li><b>Build</b><span><code>@jingbong build</code>, then review the PR.</span></li>
-      </ol>
+    <h2>## example</h2>
+    <div class="box">
+<pre><span class="muted">ENG-142  Retry failed webhook deliveries</span>
+
+maya      @jingbong cp
+jingbong  title: Retry webhooks with exponential backoff
+          - up to 5 attempts, capped at 1 hour
+          - dead-letter after the final failure
+          <span class="muted">✅ 1</span>
+maya      @jingbong build
+jingbong  opened #318 on jingbong/eng-142-retry-webhooks
+          checks pass</pre>
     </div>
   </section>
 
   <section>
-    <div class="wrap">
-      <h2>Runs on your machine</h2>
-      <p class="sub">Jingbong creates an isolated Git worktree for each request and runs the agent CLI you choose against it.</p>
-      <div class="facts">
-        <div><h3>Bring your own agent</h3><p>OpenCode, Claude Code, Codex, Gemini or Cursor.</p></div>
-        <div><h3>Multi-repo aware</h3><p>Picks which repos an issue touches. A PR in a public repo never mentions a private one.</p></div>
-        <div><h3>Never overwrites</h3><p>Every <code>build</code> gets a new branch and PR. Failing checks open as a draft.</p></div>
-        <div><h3>Stays in its lane</h3><p>It never changes issue status and never merges anything.</p></div>
-      </div>
-    </div>
+    <h2>## constraints</h2>
+    <ul>
+      <li>One isolated git worktree per request.</li>
+      <li>Agents lock the files they need through an MCP lock daemon (kdnk). Everything else is off limits.</li>
+      <li>Agents cite existing types and helpers from the entity index (mapdoc) instead of writing new ones.</li>
+      <li>Multi-repo aware. A PR in a public repo never mentions a private one.</li>
+      <li>Every build is a new branch and PR. Failing checks open as a draft.</li>
+      <li>Never changes issue status. Never merges.</li>
+    </ul>
   </section>
 
   <section>
-    <div class="wrap">
-      <h2>Get started</h2>
-      <p class="sub">See the <a href="https://github.com/north-shore-software/jingbong/blob/main/docs/SELF_HOSTING.md">self-hosting guide</a> and <a href="https://github.com/north-shore-software/jingbong/blob/main/docs/SETUP_COMMENT_MODE.md">comment-mode setup</a> for Linear and GitHub configuration.</p>
-<pre><code><span class="c"># clone and build</span>
-git clone https://github.com/north-shore-software/jingbong.git
+    <h2>## install</h2>
+    <p>Bring your own agent CLI: OpenCode, Claude Code, Codex, Gemini or Cursor.</p>
+    <div class="box">
+<pre>git clone https://github.com/north-shore-software/jingbong.git
 cd jingbong
 pnpm install
-pnpm build</code></pre>
+pnpm build</pre>
     </div>
+    <p class="muted">Then follow <a href="https://github.com/north-shore-software/jingbong/blob/main/docs/SELF_HOSTING.md">SELF_HOSTING.md</a> and <a href="https://github.com/north-shore-software/jingbong/blob/main/docs/SETUP_COMMENT_MODE.md">SETUP_COMMENT_MODE.md</a> to connect Linear and GitHub.</p>
   </section>
 
   <footer>
-    <div class="wrap">
-      <p>Jingbong is a fork of <a href="https://github.com/ceedaragents/cyrus">Cyrus</a> by <a href="https://github.com/ceedaragents">Ceedar</a>, and nearly all of the code is their work. It is developed independently and is not affiliated with or endorsed by the Cyrus project.</p>
-      <p>Apache License 2.0 · <a href="https://github.com/north-shore-software/jingbong">north-shore-software/jingbong</a></p>
-    </div>
+    <p>Fork of <a href="https://github.com/ceedaragents/cyrus">Cyrus</a> by <a href="https://github.com/ceedaragents">Ceedar</a>; nearly all of the code is theirs. Not affiliated with or endorsed by the Cyrus project.</p>
+    <p>Apache-2.0</p>
   </footer>
+
+</main>
 </body>
 </html>
