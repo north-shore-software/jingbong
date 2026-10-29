@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>jingbong</title>
-<meta name="description" content="A self-hosted agent for Linear and GitHub that works out the consequences of a change before it writes any code.">
+<meta name="description" content="An imaginary friend for Linear and GitHub. It surfaces the consequences of a product change and the decisions it forces, and your team decides together in Linear, on the record.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text x='50' y='.88em' font-size='88' text-anchor='middle' font-weight='900' font-family='serif'>精</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,11 +22,14 @@
   a { color: #111; }
   a:hover { color: #666; }
   main { max-width: 680px; margin: 0 auto; padding: 80px 20px 64px; }
-  h1, h2 { font-size: 15px; font-weight: 700; margin: 0 0 16px; }
+  h1, h2, h3 { font-size: 15px; font-weight: 700; margin: 0 0 16px; }
+  h3 { margin: 32px 0 12px; }
+  h2 + h3 { margin-top: 0; }
   p { margin: 0 0 16px; }
   p:last-child { margin-bottom: 0; }
   section, header { margin-bottom: 56px; }
   .muted { color: #666; }
+  code { font: inherit; }
 
   .logo {
     font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
@@ -59,14 +62,16 @@
   <header>
     <div class="logo" lang="zh-Hans" aria-hidden="true">精蹦</div>
     <h1>jingbong</h1>
-    <p>A self-hosted agent for Linear and GitHub that works out the consequences of a change before it writes any code.</p>
-    <p class="muted"><a href="https://github.com/north-shore-software/jingbong">github</a> · <a href="https://github.com/north-shore-software/jingbong/blob/main/docs/USER_GUIDE.md">guide</a> · <a href="https://github.com/north-shore-software/jingbong/blob/main/docs/SELF_HOSTING.md">self-hosting</a></p>
+    <p>An imaginary friend for Linear and GitHub. It surfaces the consequences of a product change and the decisions it forces, and your team decides together in Linear, on the record.</p>
+    <p class="muted"><a href="https://github.com/north-shore-software/jingbong">github</a> · <a href="https://github.com/north-shore-software/jingbong/blob/main/docs/USER_GUIDE.md">guide</a> · <a href="#install">full install instructions</a></p>
+    <div class="box">
+<pre>curl -fsSL https://jingbong.dev/ging_gang_gong_already.sh | sh</pre>
+    </div>
   </header>
 
   <section>
     <h2>## what it does</h2>
-    <p>You ask for X. Before touching the repo, jingbong works out what X implies: the choices it forces (A, B or C) and what else moves (doing X makes Z re-derive into Y). It posts that on the issue and waits for someone to decide.</p>
-    <p class="muted">It's meant for codebases that already work. On a blank repo, sane defaults are fine. On an established one they're how silent drift happens.</p>
+    <p>Iterative, collaborative decision-making in Linear. jingbong runs the process and does the legwork, you and your team make the decisions.</p>
   </section>
 
   <section>
@@ -80,43 +85,103 @@
   </section>
 
   <section>
-    <h2>## example</h2>
-    <div class="box">
-<pre><span class="muted">ENG-142  Retry failed webhook deliveries</span>
+    <h2>## examples</h2>
 
-maya      @jingbong cp
-jingbong  title: Retry webhooks with exponential backoff
-          - up to 5 attempts, capped at 1 hour
-          - dead-letter after the final failure
+    <h3>### ask in plain words</h3>
+    <div class="box">
+<pre><span class="muted">ENG-207  CSV download on reports</span>
+
+sam       reports page needs a download button, people keep
+          copying the table into spreadsheets
+maya      @jingbong how does the reports table get its rows?
+          <span class="muted">👀</span>
+jingbong  ReportsTable asks /api/reports for 50 rows at a
+          time. filters and sort are query params, so the
+          server already knows what's on screen.</pre>
+    </div>
+
+    <h3>### checkpoint</h3>
+    <div class="box">
+<pre>sam       @jingbong cp  <span class="muted">👀</span>
+jingbong  suggested title: Export reports as CSV
+          what the issue is: a button on the reports page
+          that downloads the table as a CSV.
+          done looks like:
+          - a download button above the reports table
+jingbong  open question · from checkpoint
+          export only the 50 rows on screen, or every row
+          matching the current filters?</pre>
+    </div>
+
+    <h3>### answer, then react 🤔 for options</h3>
+    <div class="box">
+<pre>  ↳ sam   every row with the filters applied. but some teams
+          have 200k rows, can a browser even do that? and
+          doesn't excel mangle accented names?
+          <span class="muted">🤔 1</span>
+jingbong  &gt; every row with the filters applied. but some...
+          question: where the CSV gets built, so it stays
+          fast for big teams and opens cleanly in excel.
+          what decides it:
+          - how many rows the biggest exports have
+          - whether people will wait, or want it sent later
+  ↳ jingbong  A. build it in the browser from paged requests
+              no server work; slow and memory-hungry at 200k
+  ↳ jingbong  B. stream it from a new /api/reports.csv
+              fast at any size; one new endpoint
+              <span class="muted">👍 1</span>
+  ↳ jingbong  C. background job, email a link when done
+              handles any size; people wait, needs storage
+  ↳ jingbong  D. export .xlsx with a spreadsheet library
+              no excel encoding trouble; new dependency</pre>
+    </div>
+
+    <h3>### checkpoint until it's settled</h3>
+    <div class="box">
+<pre>sam       @jingbong cp  <span class="muted">👀</span>
+jingbong  suggested title: Export reports as CSV
+          done looks like:
+          - a download button above the reports table
+          - every row matching the current filters and sort
+          - streamed from a new /api/reports.csv
+jingbong  open question · from checkpoint
+          write a UTF-8 byte order mark, so excel shows
+          accented names correctly?
+  ↳ sam   yes
+maya      @jingbong cp  <span class="muted">👀</span>
+jingbong  suggested title: Export reports as CSV
+          done looks like:
+          - a download button above the reports table
+          - every row matching the current filters and sort
+          - streamed from a new /api/reports.csv
+          - UTF-8 with a byte order mark
+          open questions: none
           <span class="muted">✅ 1</span>
-maya      @jingbong build
-jingbong  opened #318 on jingbong/eng-142-retry-webhooks
-          checks pass</pre>
+jingbong  ✅ applied to the title and description
+          (previous version kept in this comment)</pre>
+    </div>
+
+    <h3>### build</h3>
+    <div class="box">
+<pre>maya      @jingbong build  <span class="muted">👀</span>
+jingbong  🔨 building on jingbong/eng-207-export-reports-as-csv
+jingbong  opened #412, checks pass
+          - GET /api/reports.csv streams every matching row,
+            using the same filters and sort as the table
+          - "download CSV" button above ReportsTable
+          assumptions:
+          - file is named reports-&lt;date&gt;.csv
+          - button is disabled while the table is loading</pre>
     </div>
   </section>
 
-  <section>
-    <h2>## constraints</h2>
-    <ul>
-      <li>One isolated git worktree per request.</li>
-      <li>Agents lock the files they need through an MCP lock daemon (kdnk). Everything else is off limits.</li>
-      <li>Agents cite existing types and helpers from the entity index (mapdoc) instead of writing new ones.</li>
-      <li>Multi-repo aware. A PR in a public repo never mentions a private one.</li>
-      <li>Every build is a new branch and PR. Failing checks open as a draft.</li>
-      <li>Never changes issue status. Never merges.</li>
-    </ul>
-  </section>
-
-  <section>
+  <section id="install">
     <h2>## install</h2>
     <p>Bring your own agent CLI: OpenCode, Claude Code, Codex, Gemini or Cursor.</p>
     <div class="box">
-<pre>git clone https://github.com/north-shore-software/jingbong.git
-cd jingbong
-pnpm install
-pnpm build</pre>
+<pre>curl -fsSL https://jingbong.dev/ging_gang_gong_already.sh | sh</pre>
     </div>
-    <p class="muted">Then follow <a href="https://github.com/north-shore-software/jingbong/blob/main/docs/SELF_HOSTING.md">SELF_HOSTING.md</a> and <a href="https://github.com/north-shore-software/jingbong/blob/main/docs/SETUP_COMMENT_MODE.md">SETUP_COMMENT_MODE.md</a> to connect Linear and GitHub.</p>
+    <p class="muted">Needs git and Node.js 18+. Clones to ~/jingbong, builds it and puts <code>jingbong</code> on your PATH (<a href="https://github.com/north-shore-software/jingbong/blob/main/site/ging_gang_gong_already.sh">read the script</a>). Then run <code>/jingbong-setup</code> in your agent from that folder, or follow <a href="https://github.com/north-shore-software/jingbong/blob/main/docs/SELF_HOSTING.md">SELF_HOSTING.md</a> and <a href="https://github.com/north-shore-software/jingbong/blob/main/docs/SETUP_COMMENT_MODE.md">SETUP_COMMENT_MODE.md</a> to connect Linear and GitHub.</p>
   </section>
 
   <footer>
