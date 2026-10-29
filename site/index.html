@@ -23,7 +23,8 @@
   a:hover { color: #666; }
   main { max-width: 680px; margin: 0 auto; padding: 80px 20px 64px; }
   h1, h2, h3 { font-size: 15px; font-weight: 700; margin: 0 0 16px; }
-  h3 { margin: 32px 0 12px; }
+  h2 { font-size: 17px; padding-top: 24px; border-top: 1px solid #ddd; }
+  h3 { margin: 48px 0 12px; }
   h2 + h3 { margin-top: 0; }
   p { margin: 0 0 16px; }
   p:last-child { margin-bottom: 0; }
@@ -40,15 +41,16 @@
     margin: 0 0 28px;
   }
 
-  .issue { border: 1px solid #ddd; padding: 14px 16px; }
+  .issue { border: 1px solid #111; background: #fff; padding: 16px 20px; }
   .issue .title { font-weight: 700; }
   .issue p { margin-top: 6px; font-size: 14px; }
   .step { margin-bottom: 12px; }
+  .step b, .at { padding: 0 4px; border-radius: 3px; background: #eee; font-weight: 700; }
 
   .thread { border: 1px solid #ddd; background: #fafafa; margin-bottom: 12px; font-size: 14px; line-height: 1.6; }
   .c { display: flex; gap: 10px; padding: 12px 16px; }
   .c + .c { border-top: 1px solid #eee; }
-  .c.r { padding-left: 40px; }
+  .c.r { margin-left: 26px; padding-left: 14px; border-left: 2px solid #ddd; }
   .c > div { flex: 1; min-width: 0; }
   .av { flex: none; width: 22px; height: 22px; margin-top: 1px; display: grid; place-items: center; border: 1px solid #bbb; border-radius: 50%; background: #fff; font-size: 12px; font-weight: 700; line-height: 1; }
   .av.bot { background: #111; border-color: #111; color: #fff; }
@@ -57,7 +59,7 @@
   .body p { margin-bottom: 6px; }
   .body > :last-child { margin-bottom: 0; }
   .thread li + li { margin-top: 2px; }
-  .at { font-weight: 700; }
+  .body .muted { color: #444; }
   .rx { display: flex; gap: 6px; margin-top: 8px; }
   .rx span { padding: 0 8px; border: 1px solid #ddd; border-radius: 999px; background: #fff; font-size: 12px; line-height: 20px; }
 
@@ -75,6 +77,11 @@
 
   footer { border-top: 1px solid #ddd; padding-top: 24px; color: #666; font-size: 13px; }
   footer p { margin-bottom: 8px; }
+
+  @media (max-width: 480px) {
+    main { padding-top: 40px; }
+    .logo { font-size: 72px; margin-bottom: 20px; }
+  }
 </style>
 </head>
 <body>
