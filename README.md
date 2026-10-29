@@ -4,6 +4,11 @@ Jingbong is a self-hosted coding agent for Linear and GitHub. It watches for
 requests on issues, creates isolated Git worktrees, runs an agent CLI (OpenCode,
 Claude Code, Codex, Gemini or Cursor) against them, and replies with its results.
 
+## Using Jingbong
+
+See the [user guide](./docs/USER_GUIDE.md) for the `@jingbong` commands
+(`cp`, `opt`, `build`), the reactions and the suggested flow.
+
 ## Based on Cyrus
 
 Jingbong is a fork of [Cyrus](https://github.com/ceedaragents/cyrus) by
