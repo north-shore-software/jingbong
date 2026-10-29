@@ -4,7 +4,7 @@
 	"description": "GitLab event transport for receiving and verifying forwarded GitLab webhooks",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/cyrusagents/cyrus.git",
+		"url": "git+https://github.com/north-shore-software/jingbong.git",
 		"directory": "packages/gitlab-event-transport"
 	},
 	"type": "module",
@@ -29,7 +29,6 @@
 		"@typescript/native-preview": "7.0.0-dev.20260707.2",
 		"vitest": "^4.1.12"
 	},
-	"publishConfig": {
-		"access": "public"
-	}
+	"private": true,
+	"license": "Apache-2.0"
 }

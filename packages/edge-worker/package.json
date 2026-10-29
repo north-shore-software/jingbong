@@ -4,7 +4,7 @@
 	"description": "Unified edge worker for processing Linear issues with Claude",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/cyrusagents/cyrus.git",
+		"url": "git+https://github.com/north-shore-software/jingbong.git",
 		"directory": "packages/edge-worker"
 	},
 	"type": "module",
@@ -63,7 +63,6 @@
 		"vitest": "^4.1.12",
 		"vitest-mock-extended": "^3.1.0"
 	},
-	"publishConfig": {
-		"access": "public"
-	}
+	"private": true,
+	"license": "Apache-2.0"
 }

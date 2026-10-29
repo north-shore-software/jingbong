@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**Jingbong is a fork of [Cyrus](https://github.com/ceedaragents/cyrus)** (forked at v0.2.74, tag `cyrus-v0.2.74`). Most of this file describes inherited Cyrus internals, which still apply. Jingbong is developed independently: changes are not upstreamed, and references below to CYPACK/CYHOST tickets, `cyrus-hosted` or the Cyrus cloud service describe upstream context, not work to do here. Keep `LICENSE` and `NOTICE` intact.
+
 ## Project Overview
 
 Cyrus (Linear Claude Agent) is a monorepo JavaScript/TypeScript application that integrates Linear's issue tracking with Anthropic's Claude Code to automate software development tasks. The project is transitioning to an edge-proxy architecture that separates OAuth/webhook handling (proxy) from Claude processing (edge workers).
@@ -506,28 +508,10 @@ live on long after they stop doing anything.
 
 ## Development Workflow
 
-When working on this codebase, follow these practices:
+When submitting a pull request:
 
-1. **As part of submitting a Pull Request**:
-   - Update `CHANGELOG.md` under the `## [Unreleased]` section with your changes
-   - Use appropriate subsections: `### Added`, `### Changed`, `### Fixed`, `### Removed`
-   - Include brief, clear descriptions of what was changed and why
-   - **Include the PR number/link**: If the PR is already created, include the link (e.g., `([#123](https://github.com/ceedaragents/cyrus/pull/123))`). If not, create the PR first, then update the changelog with the link, commit, and push.
-   - Run relevant existing checks per the verification policy; use `pnpm test:packages:run` when package-wide regression coverage is warranted
-   - Run `pnpm typecheck` and `pnpm build` when affected by the change or required by repository hooks/CI
-
-2. **Internal Changelog**:
-   - For internal development changes, refactors, tooling updates, or other non-user-facing modifications, update `CHANGELOG.internal.md`.
-   - Follow the same format as the main changelog.
-   - This helps track internal improvements that don't need to be exposed to end-users.
-
-3. **Changelog Format**:
-   - Follow [Keep a Changelog](https://keepachangelog.com/) format
-   - **Focus only on end-user impact**: Write entries from the perspective of users running the `cyrus` CLI binary
-   - Avoid technical implementation details, package names, or internal architecture changes
-   - Be concise but descriptive about what users will experience differently
-   - Group related changes together
-   - Example: "New comments now feed into existing sessions" NOT "Implemented AsyncIterable<SDKUserMessage> for ClaudeRunner"
+1. Add a short entry to `CHANGELOG.md` under `## [Unreleased]` (`### Added`, `### Changed`, `### Fixed`, `### Removed`), written from the point of view of someone running Jingbong rather than in terms of internal implementation details.
+2. Run the relevant checks per the verification policy above; use `pnpm test:packages:run` when package-wide coverage is warranted, and `pnpm typecheck` / `pnpm build` when affected or required by hooks/CI.
 
 ## Key Code Paths
 
@@ -577,12 +561,7 @@ This integration is automatically available in all Cyrus sessions - the EdgeWork
 
 ## Publishing
 
-For publishing and release instructions, use the `/release` skill (within Claude Code or Claude Agent SDK) which provides a complete guide for publishing packages to npm in the correct dependency order. Invoke it with:
-
-```
-/release
-```
-
+Jingbong is not published to npm. Every package is `"private": true`, and the `cyrus-*` package names belong to upstream Cyrus, so do not publish under them.
 
 ## Gemini CLI for Testing
 

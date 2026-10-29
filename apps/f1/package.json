@@ -27,9 +27,6 @@
 		"README.md",
 		"CLAUDE.md"
 	],
-	"publishConfig": {
-		"access": "public"
-	},
 	"dependencies": {
 		"commander": "^14.0.2",
 		"cyrus-claude-runner": "workspace:*",
@@ -44,5 +41,11 @@
 	},
 	"engines": {
 		"node": ">=18.0.0"
+	},
+	"private": true,
+	"license": "Apache-2.0",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/north-shore-software/jingbong.git"
 	}
 }
