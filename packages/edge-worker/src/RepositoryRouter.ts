@@ -302,20 +302,21 @@ export class RepositoryRouter {
 
 		// Priority 5: Find catch-all repository (no routing configuration)
 		// TODO: Remove catch-all routing - require explicit routing configuration for all repositories
-		const catchAllRepo = workspaceRepos.find(
+		// Every catch-all repository is selected, so one issue can work across several repos
+		const catchAllRepos = workspaceRepos.filter(
 			(repo) =>
 				(!repo.teamKeys || repo.teamKeys.length === 0) &&
 				(!repo.routingLabels || repo.routingLabels.length === 0) &&
 				(!repo.projectKeys || repo.projectKeys.length === 0),
 		);
 
-		if (catchAllRepo) {
+		if (catchAllRepos.length > 0) {
 			this.logger.info(
-				`Repository selected: ${catchAllRepo.name} (workspace catch-all)`,
+				`Repositories selected: [${catchAllRepos.map((repo) => repo.name).join(", ")}] (workspace catch-all)`,
 			);
 			return {
 				type: "selected",
-				repositories: [catchAllRepo],
+				repositories: catchAllRepos,
 				routingMethod: "catch-all",
 			};
 		}
@@ -586,7 +587,7 @@ export class RepositoryRouter {
 
 				const fullIssue = await issueTracker.fetchIssue(issueId);
 				const project = await fullIssue?.project;
-				if (!project || !project.name) {
+				if (!project?.name) {
 					this.logger.debug(
 						`No project name found for issue ${issueId} in repository ${repo.name}`,
 					);

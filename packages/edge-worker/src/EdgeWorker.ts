@@ -63,6 +63,7 @@ import {
 	GitHubTokenStore,
 	isAgentSessionCreatedWebhook,
 	isAgentSessionPromptedWebhook,
+	isCommentSessionId,
 	isContentUpdateMessage,
 	isIssueAssignedWebhook,
 	isIssueCommentMentionWebhook,
@@ -160,6 +161,7 @@ import { LiveChatRepositoryProvider } from "./ChatRepositoryProvider.js";
 import type { ChatSessionHandlerDeps } from "./ChatSessionHandler.js";
 import { ChatSessionHandler } from "./ChatSessionHandler.js";
 import { ConfigManager, type RepositoryChanges } from "./ConfigManager.js";
+import { CommentModeHandler } from "./comment-mode/CommentModeHandler.js";
 import { DefaultSkillsDeployer } from "./DefaultSkillsDeployer.js";
 import { EgressProxy } from "./EgressProxy.js";
 import { GitService } from "./GitService.js";
@@ -257,6 +259,8 @@ export class EdgeWorker extends EventEmitter {
 	private queuedGitHubPrEvents = new Map<string, GitHubCommentWebhookEvent[]>();
 	/** Handler for AskUserQuestion tool invocations via Linear select signal */
 	private askUserQuestionHandler: AskUserQuestionHandler;
+	/** "@handle" mentions in ordinary Linear comments, skills and reactions */
+	private commentMode: CommentModeHandler;
 	/** User access control for whitelisting/blacklisting Linear users */
 	private userAccessControl: UserAccessControl;
 	private logger: ILogger;
@@ -459,6 +463,27 @@ export class EdgeWorker extends EventEmitter {
 				return this.getIssueTrackerForWorkspace(linearWorkspaceId) ?? null;
 			},
 		});
+
+		this.commentMode = new CommentModeHandler(
+			{
+				logger: this.logger,
+				cyrusHome: this.cyrusHome,
+				opencodeDefaultModel: () => this.config.opencodeDefaultModel,
+				gitHubAppTokenProvider: () => this.gitHubAppTokenProvider,
+			},
+			{
+				getTracker: (workspaceId) => this.issueTrackers.get(workspaceId),
+				getSession: (sessionId) =>
+					this.agentSessionManager.getSession(sessionId),
+				awaitingAnswer: (sessionId) =>
+					this.askUserQuestionHandler.hasPendingQuestion(sessionId) ||
+					this.repositoryRouter.hasPendingSelection(sessionId),
+				startSession: (webhook, repos) =>
+					this.handleAgentSessionCreatedWebhook(webhook, repos),
+				promptSession: (webhook) =>
+					this.handleUserPromptedAgentActivity(webhook),
+			},
+		);
 
 		// Initialize webhook IP validator
 		// Enabled by default in self-hosted mode (CYRUS_HOST_EXTERNAL=true),
@@ -3451,6 +3476,9 @@ ${taskSection}`;
 		}
 
 		try {
+			if (await this.commentMode.handleWebhook(webhook, repos)) {
+				return;
+			}
 			// Route to specific webhook handlers based on webhook type
 			// NOTE: Traditional webhooks (assigned, comment) are disabled in favor of agent session events
 			if (isIssueAssignedWebhook(webhook)) {
@@ -4369,8 +4397,11 @@ ${taskSection}`;
 			throw new Error(`Failed to fetch full issue details for ${issue.id}`);
 		}
 
-		// Move issue to started state automatically, in case it's not already
-		await this.moveIssueToStartedState(fullIssue, linearWorkspaceId);
+		// Move issue to started state automatically, in case it's not already;
+		// sessions started from comments never change the status
+		if (!isCommentSessionId(sessionId)) {
+			await this.moveIssueToStartedState(fullIssue, linearWorkspaceId);
+		}
 
 		// Create workspace using full issue data
 		// IMPORTANT: The CLI app (apps/cli/src/services/WorkerService.ts) typically provides

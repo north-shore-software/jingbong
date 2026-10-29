@@ -50,7 +50,7 @@ import type {
 	User,
 	WorkflowState,
 } from "cyrus-core";
-import { createLogger, type ILogger } from "cyrus-core";
+import { createLogger, type ILogger, parseCommentSessionId } from "cyrus-core";
 import { LinearEventTransport } from "./LinearEventTransport.js";
 
 /**
@@ -79,6 +79,7 @@ export class LinearIssueTrackerService implements IIssueTrackerService {
 	private oauthConfig?: LinearOAuthConfig;
 	private logger: ILogger;
 	private refreshPromise: Promise<string> | null = null;
+	private commentSessionHeader?: (sessionId: string) => Promise<string>;
 
 	/**
 	 * Static map for workspace-level coalescing of concurrent token refreshes.
@@ -817,7 +818,47 @@ export class LinearIssueTrackerService implements IIssueTrackerService {
 	async createAgentActivity(
 		input: AgentActivityCreateInput,
 	): Promise<AgentActivityPayload> {
+		const commentSession = parseCommentSessionId(input.agentSessionId);
+		if (commentSession) {
+			await this.postCommentSessionActivity(commentSession, input);
+			return { success: true } as AgentActivityPayload;
+		}
 		return await this.linearClient.createAgentActivity(input);
+	}
+
+	/**
+	 * Sets the line put at the top of every comment-session reply (which
+	 * commit, session and model produced it).
+	 */
+	setCommentSessionHeader(
+		header: (sessionId: string) => Promise<string>,
+	): void {
+		this.commentSessionHeader = header;
+	}
+
+	/**
+	 * Comment sessions have no Linear agent session: their responses, errors
+	 * and questions become ordinary replies in the comment thread, and every
+	 * other activity (thoughts, tool calls) is dropped.
+	 */
+	private async postCommentSessionActivity(
+		session: { issueId: string; rootCommentId: string },
+		input: AgentActivityCreateInput,
+	): Promise<void> {
+		const content = input.content as { type?: string; body?: string };
+		const posted = ["response", "error", "elicitation"];
+		if (!content?.type || !posted.includes(content.type)) return;
+		if (!content.body?.trim()) return;
+		let header = "";
+		try {
+			header = (await this.commentSessionHeader?.(input.agentSessionId)) ?? "";
+		} catch {
+			// post the reply without a header rather than not at all
+		}
+		await this.createComment(session.issueId, {
+			body: header ? `${header}\n\n${content.body}` : content.body,
+			parentId: session.rootCommentId,
+		});
 	}
 
 	// ========================================================================

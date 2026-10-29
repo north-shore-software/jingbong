@@ -1310,7 +1310,7 @@ describe("RepositoryRouter", () => {
 				);
 			});
 
-			it("should prefer first catch-all when multiple catch-all repositories exist", async () => {
+			it("should select every catch-all repository when several exist", async () => {
 				// Given: Multiple catch-all repositories
 				const catchAll1 = env
 					.repository("repo-1", "First Catch All")
@@ -1330,8 +1330,11 @@ describe("RepositoryRouter", () => {
 					catchAll2,
 				]);
 
-				// Then: Should select first catch-all repository
-				expectRouting(result).shouldSelectRepositoryVia(catchAll1, "catch-all");
+				// Then: Should select both catch-all repositories, in order
+				expectRouting(result).shouldSelectRepositoriesVia(
+					[catchAll1, catchAll2],
+					"catch-all",
+				);
 			});
 		});
 	});

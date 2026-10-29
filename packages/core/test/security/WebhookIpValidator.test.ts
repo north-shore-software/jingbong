@@ -287,9 +287,12 @@ describe("WebhookIpValidator", () => {
 			}) as unknown as typeof fetch;
 
 			const validator = new WebhookIpValidator();
+			// transports keep the array they were given at startup
+			const heldByTransport = validator.getAllowlist("github");
 			await validator.refreshGitHubAllowlist();
 
 			expect(validator.getAllowlist("github")).toEqual(mockCidrs);
+			expect(heldByTransport).toEqual(mockCidrs);
 
 			// Clean up
 			vi.mocked(global.fetch).mockRestore();

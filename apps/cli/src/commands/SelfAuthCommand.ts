@@ -139,7 +139,7 @@ export class SelfAuthCommand extends BaseCommand {
 			const redirectUri = `${baseUrl}/callback`;
 			// https://linear.app/developers/oauth-2-0-authentication
 			// https://linear.app/developers/oauth-actor-authorization
-			const oauthUrl = `https://linear.app/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=write,app:assignable,app:mentionable&actor=app`;
+			const oauthUrl = `https://linear.app/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=read,write&actor=app`;
 
 			this.server = Fastify({ logger: false });
 
@@ -247,7 +247,7 @@ export class SelfAuthCommand extends BaseCommand {
 			refresh_token?: string;
 		};
 
-		if (!data.access_token || !data.access_token.startsWith("lin_oauth_")) {
+		if (!data.access_token?.startsWith("lin_oauth_")) {
 			throw new Error("Invalid access token received");
 		}
 

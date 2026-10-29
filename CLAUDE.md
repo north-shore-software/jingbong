@@ -65,6 +65,10 @@ The F1 (Formula 1) testing framework provides a controlled environment to test C
 
 Choose validation by the actual changed behavior, not the size of the task or filenames. Follow the canonical [F1 applicability policy](skills/f1-test-drive/SKILL.md#applicability-required-before-setup): F1-covered product/runtime changes and functional changes to the F1 harness require relevant F1 validation. Changes with no relevant workflow behavior use targeted checks and a brief PR validation note, without running F1 or creating, attaching, or committing an F1 report. For releases, assess the full payload since the previous release, not just the release PR. Preserve historical test-drive evidence.
 
+## Comment Mode (Jingbong)
+
+Jingbong replies to `@jingbong` mentions in ordinary Linear comments instead of using Linear agent sessions. The code is in `packages/edge-worker/src/comment-mode/`; `CommentModeHandler.handleWebhook` runs before the other webhook handlers in `EdgeWorker.handleWebhook`. Comment sessions have IDs `cmt_<issueId>_<rootCommentId>` (`cyrus-core` `comment-sessions.ts`), and `LinearIssueTrackerService.createAgentActivity` posts their responses as thread replies. The bundled skills are in `packages/edge-worker/comment-skills/`. See `docs/USER_GUIDE.md` and `docs/SETUP_COMMENT_MODE.md`.
+
 ## Linear Webhooks Reference
 
 Cyrus processes Linear webhooks to respond to events like issue assignments, user prompts, and issue updates. The Linear SDK and webhook schemas are documented at:

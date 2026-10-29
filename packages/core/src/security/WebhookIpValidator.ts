@@ -150,7 +150,7 @@ export interface WebhookIpValidatorOptions {
  * the API is unavailable.
  */
 export class WebhookIpValidator {
-	private allowlists: Record<WebhookProvider, readonly string[]>;
+	private allowlists: Record<WebhookProvider, string[]>;
 	private enabled: boolean;
 	private logger: ILogger;
 
@@ -161,9 +161,9 @@ export class WebhookIpValidator {
 
 		const custom = options.customAllowlists ?? {};
 		this.allowlists = {
-			linear: custom.linear ?? [...LINEAR_WEBHOOK_IPS],
-			github: custom.github ?? [...GITHUB_WEBHOOK_CIDRS_FALLBACK],
-			gitlab: custom.gitlab ?? [...GITLAB_WEBHOOK_CIDRS],
+			linear: [...(custom.linear ?? LINEAR_WEBHOOK_IPS)],
+			github: [...(custom.github ?? GITHUB_WEBHOOK_CIDRS_FALLBACK)],
+			gitlab: [...(custom.gitlab ?? GITLAB_WEBHOOK_CIDRS)],
 		};
 	}
 
@@ -187,7 +187,13 @@ export class WebhookIpValidator {
 
 			const data = (await response.json()) as { hooks?: string[] };
 			if (data.hooks && Array.isArray(data.hooks) && data.hooks.length > 0) {
-				this.allowlists.github = data.hooks;
+				// Update in place: transports hold a reference to this array, so a
+				// new array would leave them checking the stale fallback list.
+				this.allowlists.github.splice(
+					0,
+					this.allowlists.github.length,
+					...data.hooks,
+				);
 				this.logger.info(
 					`Refreshed GitHub webhook allowlist: ${data.hooks.length} CIDRs`,
 				);

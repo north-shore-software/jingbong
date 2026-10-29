@@ -49,6 +49,31 @@ ${body}
 }
 
 describe("OpenCodeRunner", () => {
+	it("runs standalone in the working directory and exposes the final assistant text", async () => {
+		const dir = makeTempDir();
+		const captureFile = join(dir, "capture.json");
+		const opencodePath = writeFakeOpenCode(
+			dir,
+			`writeFileSync(${JSON.stringify(join(dir, "cwd.txt"))}, process.cwd());
+process.stdout.write(${JSON.stringify(fixtureLines())});`,
+			captureFile,
+		);
+		const runner = new OpenCodeRunner({
+			openCodePath: opencodePath,
+			workingDirectory: dir,
+			cyrusHome: dir,
+			standalone: true,
+		});
+
+		await runner.start("Hello");
+
+		const capture = JSON.parse(readFileSync(captureFile, "utf8"));
+		expect(capture.argv.slice(0, 2)).toEqual(["run", "--standalone"]);
+		expect(capture.argv).not.toContain("--dir");
+		expect(readFileSync(join(dir, "cwd.txt"), "utf8")).toBe(dir);
+		expect(runner.getLastAssistantText()).toBeTruthy();
+	});
+
 	it("spawns opencode run with JSON output flags and maps replay events to Cyrus messages", async () => {
 		const dir = makeTempDir();
 		const captureFile = join(dir, "capture.json");
@@ -86,9 +111,7 @@ describe("OpenCodeRunner", () => {
 			"json",
 			"--print-logs",
 			"--log-level",
-			"ERROR",
-			"--dir",
-			dir,
+			"error",
 			"--title",
 			"NG-61 OpenCode runner",
 			"--model",

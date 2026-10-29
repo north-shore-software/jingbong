@@ -1,0 +1,505 @@
+import { execFile } from "node:child_process";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { basename, dirname, join } from "node:path";
+import { promisify } from "node:util";
+import {
+	type AgentSessionCreatedWebhook,
+	type AgentSessionPromptedWebhook,
+	type CyrusAgentSession,
+	commentSessionId,
+	type RepositoryConfig,
+} from "cyrus-core";
+import { LinearIssueTrackerService } from "cyrus-linear-event-transport";
+import { runBuildSkill } from "./buildSkill.js";
+import { applyCheckpoint } from "./checkpoint.js";
+import { OPEN_QUESTION_MARKER } from "./issueThread.js";
+import {
+	graphql,
+	humanReactors,
+	isCheckMark,
+	isThinking,
+	type LinearCommentNode,
+} from "./linearApi.js";
+import { mentionsHandle, stripMentions } from "./mentions.js";
+import { openCodeSessionModel } from "./openCodeModel.js";
+import { runReadonlySkill } from "./readonlySkill.js";
+import { commentSkillDirs, loadCommentSkill, replyRules } from "./skills.js";
+import {
+	type CommentModeHost,
+	errorMessage,
+	type SkillRequest,
+	type SkillRunContext,
+} from "./types.js";
+
+const run = promisify(execFile);
+
+/** What comment mode needs from the EdgeWorker beyond CommentModeHost. */
+export interface CommentModeSessions {
+	getTracker(workspaceId: string): unknown;
+	getSession(sessionId: string): CyrusAgentSession | undefined;
+	/** True while the session waits for an answer to its own question. */
+	awaitingAnswer(sessionId: string): boolean;
+	startSession(
+		webhook: AgentSessionCreatedWebhook,
+		repos: RepositoryConfig[],
+	): Promise<void>;
+	promptSession(webhook: AgentSessionPromptedWebhook): Promise<void>;
+}
+
+interface CommentWebhookData {
+	id?: string;
+	issueId?: string;
+	parentId?: string;
+	body?: string;
+	userId?: string;
+	botActor?: unknown;
+	createdAt?: string;
+}
+
+interface LinearWebhook {
+	type?: string;
+	action?: string;
+	organizationId?: string;
+	createdAt?: string;
+	actor?: { id?: string; type?: string; name?: string; email?: string };
+	data?: Record<string, unknown>;
+	notification?: {
+		type?: string;
+		commentId?: string;
+		reactionEmoji?: string;
+	};
+}
+
+/**
+ * Comment mode: the bot works like a plain Linear integration instead of a
+ * Linear agent. "@handle" in an ordinary comment starts (or continues) work,
+ * and answers are posted as replies in that comment's thread.
+ *
+ * - "@handle <text>" runs a Cyrus session with id `cmt_<issueId>_<rootId>`;
+ *   LinearIssueTrackerService posts its responses as thread replies.
+ * - "@handle <skill> [args]" runs a skill (see skills.ts).
+ * - A person's ✅ on a cp write-up applies it to the issue; 🤔 on any
+ *   comment runs opt with that comment as the question.
+ */
+export class CommentModeHandler {
+	private botIds = new Map<string, string>();
+	/** 🤔 runs claimed in this process (Linear can deliver one reaction twice). */
+	private optClaimed = new Set<string>();
+
+	constructor(
+		private readonly host: CommentModeHost,
+		private readonly sessions: CommentModeSessions,
+	) {}
+
+	private get logger() {
+		return this.host.logger;
+	}
+
+	private linearTracker(workspaceId: string | undefined) {
+		if (!workspaceId) return null;
+		const tracker = this.sessions.getTracker(workspaceId);
+		return tracker instanceof LinearIssueTrackerService ? tracker : null;
+	}
+
+	private async botId(
+		workspaceId: string,
+		tracker: LinearIssueTrackerService,
+	): Promise<string | undefined> {
+		if (!this.botIds.has(workspaceId)) {
+			try {
+				const me = await tracker.fetchCurrentUser();
+				if (me?.id) this.botIds.set(workspaceId, me.id);
+			} catch (error) {
+				this.logger.warn(`Could not look up bot user: ${errorMessage(error)}`);
+			}
+		}
+		return this.botIds.get(workspaceId);
+	}
+
+	/**
+	 * Handles comment-mode webhooks. Returns true when the webhook was a
+	 * Comment, Reaction or comment-reaction notification (handled or
+	 * deliberately ignored), false when the EdgeWorker should handle it.
+	 */
+	async handleWebhook(
+		raw: unknown,
+		repos: RepositoryConfig[],
+	): Promise<boolean> {
+		const webhook = raw as LinearWebhook;
+		if (
+			webhook?.type === "AppUserNotification" &&
+			webhook.notification?.type === "issueCommentReaction"
+		) {
+			await this.handleReactionNotification(webhook, repos);
+			return true;
+		}
+		// 🤔 on any comment (reactions on the bot's own comments also arrive as the notification above)
+		if (webhook?.type === "Reaction") {
+			this.handleReaction(webhook, repos);
+			return true;
+		}
+		if (webhook?.type !== "Comment" || webhook.action !== "create") {
+			return false;
+		}
+		await this.handleComment(webhook, repos);
+		return true;
+	}
+
+	private async handleReactionNotification(
+		webhook: LinearWebhook,
+		repos: RepositoryConfig[],
+	): Promise<void> {
+		const workspaceId = webhook.organizationId!;
+		const tracker = this.linearTracker(workspaceId);
+		const { commentId, reactionEmoji: emoji = "" } = webhook.notification!;
+		if (!tracker || !commentId) return;
+		if (isCheckMark(emoji)) {
+			await applyCheckpoint({
+				tracker,
+				commentId,
+				botId: await this.botId(workspaceId, tracker),
+				logger: this.logger,
+			}).catch((error) => {
+				this.logger.error(
+					`Could not apply checkpoint ${commentId}: ${errorMessage(error)}`,
+				);
+			});
+		} else if (isThinking(emoji)) {
+			void this.optFromReaction(tracker, workspaceId, commentId, repos);
+		}
+	}
+
+	private handleReaction(webhook: LinearWebhook, repos: RepositoryConfig[]) {
+		const workspaceId = webhook.organizationId;
+		const tracker = this.linearTracker(workspaceId);
+		const data = (webhook.data ?? {}) as {
+			emoji?: string;
+			commentId?: string;
+			comment?: { id?: string };
+		};
+		if (
+			!tracker ||
+			webhook.action !== "create" ||
+			!isThinking(data.emoji ?? "")
+		) {
+			return;
+		}
+		const commentId = data.commentId || data.comment?.id;
+		if (!commentId) {
+			this.logger.warn(
+				`🤔 Reaction webhook without a comment id (fields: ${Object.keys(data).join(", ")})`,
+			);
+			return;
+		}
+		void this.optFromReaction(tracker, workspaceId!, commentId, repos);
+	}
+
+	private async handleComment(
+		webhook: LinearWebhook,
+		repos: RepositoryConfig[],
+	): Promise<void> {
+		const data = (webhook.data ?? {}) as CommentWebhookData;
+		const workspaceId = webhook.organizationId;
+		const tracker = this.linearTracker(workspaceId);
+		if (!tracker || !workspaceId || !data.id || !data.issueId) return;
+		tracker.setCommentSessionHeader((sid) => this.commentHeader(sid));
+		if (
+			data.botActor ||
+			(webhook.actor?.type && webhook.actor.type !== "user")
+		) {
+			return;
+		}
+		const botId = await this.botId(workspaceId, tracker);
+		if (data.userId && data.userId === botId) return;
+
+		const body = data.body || "";
+		const rootId = data.parentId || data.id;
+		const sessionId = commentSessionId(data.issueId, rootId);
+		const awaitingAnswer = this.sessions.awaitingAnswer(sessionId);
+		const mentioned = mentionsHandle(body);
+		// every new request needs the mention; only an answer to the bot's own question doesn't
+		if (!mentioned && !awaitingAnswer) return;
+
+		let prompt = stripMentions(body);
+		// "@handle <skill> args": a first word naming a skill runs it; anything else is an ordinary prompt
+		const skillMatch =
+			mentioned && !awaitingAnswer
+				? /^([a-z0-9][a-z0-9_-]*)(?:\s+([\s\S]*))?$/i.exec(prompt)
+				: null;
+		const loaded = skillMatch
+			? await loadCommentSkill(
+					skillMatch[1]!,
+					commentSkillDirs(this.host.cyrusHome),
+				)
+			: null;
+		let skill: SkillRequest | null = null;
+		if (loaded) {
+			const args = (skillMatch?.[2] ?? "").trim();
+			if (loaded.build || loaded.readonly) {
+				// "thread-context: yes" skills asked from inside a thread: everything said in it so far is the discussion
+				const discussion =
+					loaded.readonly && loaded.threadContext && data.parentId
+						? {
+								rootId: data.parentId,
+								until: data.createdAt || new Date().toISOString(),
+							}
+						: null;
+				skill = { ...loaded, args, discussion };
+			} else {
+				prompt = `Run the "${loaded.name}" skill. Follow its instructions exactly.\n\n<skill name="${loaded.name}">\n${loaded.text}\n</skill>\n\nArguments: ${args || "(none)"}`;
+			}
+			this.logger.info(
+				`Skill "${loaded.name}"${loaded.build ? " (build)" : loaded.readonly ? " (readonly)" : ""} requested in comment ${data.id}`,
+			);
+		}
+		// language and no-status-change rules go with every prompt except an answer to the bot's own question
+		if (!awaitingAnswer) {
+			prompt = `${prompt}\n\n${replyRules({ session: true })}`;
+		}
+
+		const issue = await tracker.fetchIssue(data.issueId);
+		this.logger.info(
+			`${mentioned ? "Mention" : "Answer"} in comment ${data.id} on ${issue.identifier} -> ${skill ? `skill ${skill.name}` : `session ${sessionId}`}`,
+		);
+		tracker
+			.getClient()
+			.createReaction({ commentId: data.id, emoji: "eyes" })
+			.catch((error) => {
+				this.logger.debug(
+					`Could not react to comment ${data.id}: ${errorMessage(error)}`,
+				);
+			});
+
+		if (skill) {
+			const ctx: SkillRunContext = {
+				host: this.host,
+				tracker,
+				workspaceId,
+				issue,
+				commentId: data.id,
+				rootId,
+				skill,
+				repos,
+				botId,
+			};
+			const runSkill = skill.build ? runBuildSkill : runReadonlySkill;
+			runSkill(ctx).catch((error) => {
+				this.logger.error(
+					`Skill "${skill.name}" crashed: ${error instanceof Error ? error.stack : String(error)}`,
+				);
+			});
+			return;
+		}
+
+		const team = await issue.team;
+		const userId = data.userId || webhook.actor?.id;
+		let creator: { id: string; name?: string; email?: string } | undefined =
+			webhook.actor?.id
+				? {
+						id: webhook.actor.id,
+						name: webhook.actor.name,
+						email: webhook.actor.email,
+					}
+				: undefined;
+		if (userId && !creator?.email) {
+			try {
+				const user = await tracker.fetchUser(userId);
+				creator = { id: user.id, name: user.name, email: user.email };
+			} catch {
+				// keep whatever the webhook gave us
+			}
+		}
+		const agentSession = {
+			id: sessionId,
+			issueId: issue.id,
+			issue: {
+				id: issue.id,
+				identifier: issue.identifier,
+				title: issue.title,
+				description: issue.description,
+				url: issue.url,
+				teamId: team?.id,
+				team: team
+					? { id: team.id, key: team.key, name: team.name }
+					: undefined,
+			},
+			commentId: data.id,
+			comment: { id: data.id, body: prompt },
+			creator,
+		};
+		if (awaitingAnswer || this.sessions.getSession(sessionId)) {
+			await this.sessions.promptSession({
+				type: "AgentSessionEvent",
+				action: "prompted",
+				organizationId: workspaceId,
+				createdAt: data.createdAt,
+				agentSession,
+				agentActivity: {
+					id: `act_${data.id}`,
+					content: { type: "prompt", body: prompt },
+					sourceCommentId: data.id,
+				},
+			} as unknown as AgentSessionPromptedWebhook);
+		} else {
+			await this.sessions.startSession(
+				{
+					type: "AgentSessionEvent",
+					action: "created",
+					organizationId: workspaceId,
+					createdAt: data.createdAt,
+					agentSession,
+					guidance: [],
+				} as unknown as AgentSessionCreatedWebhook,
+				repos,
+			);
+		}
+	}
+
+	/**
+	 * A person's 🤔 on any comment runs the opt skill with that comment's text
+	 * as the question, once per comment: `<cyrusHome>/state/opt-reactions.json`
+	 * remembers which comments already ran (delete an entry to allow a rerun).
+	 */
+	private async optFromReaction(
+		tracker: LinearIssueTrackerService,
+		workspaceId: string,
+		commentId: string,
+		repos: RepositoryConfig[],
+	): Promise<void> {
+		// the bot's own comments arrive as both a Reaction webhook and a notification; claim before any await
+		if (this.optClaimed.has(commentId)) return;
+		this.optClaimed.add(commentId);
+		try {
+			const ledger = join(this.host.cyrusHome, "state", "opt-reactions.json");
+			let done: Record<string, string> = {};
+			try {
+				done = JSON.parse(await readFile(ledger, "utf8"));
+			} catch {
+				// first run
+			}
+			if (done[commentId]) {
+				this.logger.info(
+					`🤔 on comment ${commentId}: opt already ran for it at ${done[commentId]}`,
+				);
+				return;
+			}
+			const { comment: c } = await graphql<{
+				comment: (LinearCommentNode & { issue: { id: string } | null }) | null;
+			}>(
+				tracker,
+				`query ($id: String!) {
+					comment(id: $id) {
+						id body createdAt
+						parent { id }
+						issue { id }
+						reactions { emoji user { name app } }
+					}
+				}`,
+				{ id: commentId },
+			);
+			const thinkers = c ? humanReactors(c, isThinking) : [];
+			// a comment's first line may be a reply header or the open-question marker
+			const question = (c?.body || "")
+				.replace(/^commits? [^\n]*· session `[^\n]*\n+/, "")
+				.replace(
+					new RegExp(
+						`^${OPEN_QUESTION_MARKER.replace(/\*/g, "\\*")}[^\\n]*\\n+`,
+					),
+					"",
+				)
+				.trim();
+			if (!c?.issue || thinkers.length === 0 || !question) {
+				this.optClaimed.delete(commentId);
+				return;
+			}
+			const skill = await loadCommentSkill(
+				"opt",
+				commentSkillDirs(this.host.cyrusHome),
+			);
+			if (!skill?.readonly) {
+				this.logger.warn("🤔 ignored: no readonly opt skill");
+				this.optClaimed.delete(commentId);
+				return;
+			}
+			done[commentId] = new Date().toISOString();
+			await mkdir(dirname(ledger), { recursive: true });
+			await writeFile(ledger, JSON.stringify(done, null, 2));
+			const issue = await tracker.fetchIssue(c.issue.id);
+			this.logger.info(
+				`🤔 by ${thinkers.join(", ")} on comment ${commentId} (${issue.identifier}): running opt`,
+			);
+			// a reply in a thread: the thread up to and including it is the discussion; the reply stays the focus
+			const discussion =
+				skill.threadContext && c.parent
+					? { rootId: c.parent.id, until: c.createdAt }
+					: null;
+			await runReadonlySkill({
+				host: this.host,
+				tracker,
+				workspaceId,
+				issue,
+				commentId,
+				rootId: null,
+				skill: { ...skill, args: question, fromReaction: true, discussion },
+				repos,
+				botId: await this.botId(workspaceId, tracker),
+			});
+		} catch (error) {
+			this.logger.error(
+				`🤔 on comment ${commentId} failed: ${error instanceof Error ? error.stack : String(error)}`,
+			);
+		}
+	}
+
+	/** "commit · session · model" line put at the top of every session reply. */
+	async commentHeader(sessionId: string): Promise<string> {
+		const session = this.sessions.getSession(sessionId);
+		const cwd = session?.workspace?.path;
+		// multi-repo sessions: cwd is a plain parent folder with one worktree per repo
+		const repoPaths = Object.values(session?.workspace?.repoPaths ?? {});
+		const commitOf = async (dir: string) => {
+			try {
+				let commit = (
+					await run("git", ["-C", dir, "rev-parse", "--short", "HEAD"])
+				).stdout.trim();
+				const dirty = (
+					await run("git", ["-C", dir, "status", "--porcelain"])
+				).stdout.trim();
+				if (dirty) commit += "-dirty";
+				return commit;
+			} catch {
+				return "unknown";
+			}
+		};
+		let commits = "commit `unknown`";
+		if (repoPaths.length > 1) {
+			const each = await Promise.all(
+				repoPaths.map(
+					async (dir) => `${basename(dir)} \`${await commitOf(dir)}\``,
+				),
+			);
+			commits = `commits ${each.join(", ")}`;
+		} else if (repoPaths[0] || cwd) {
+			commits = `commit \`${await commitOf((repoPaths[0] || cwd)!)}\``;
+		}
+		const runnerSessionId =
+			session?.opencodeSessionId ||
+			session?.claudeSessionId ||
+			session?.geminiSessionId ||
+			session?.codexSessionId ||
+			session?.cursorSessionId ||
+			sessionId;
+		const model =
+			(await openCodeSessionModel(session?.opencodeSessionId, cwd).catch(
+				(error) => {
+					this.logger.warn(
+						`Could not read model from OpenCode session ${session?.opencodeSessionId}: ${errorMessage(error)}`,
+					);
+					return null;
+				},
+			)) ||
+			(session?.metadata as { model?: string } | undefined)?.model ||
+			"unknown";
+		return `${commits} · session \`${runnerSessionId}\` · model \`${model}\``;
+	}
+}

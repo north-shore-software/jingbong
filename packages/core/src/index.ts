@@ -1,5 +1,11 @@
 // Logging
 
+// Comment mode
+export {
+	commentSessionId,
+	isCommentSessionId,
+	parseCommentSessionId,
+} from "./comment-sessions.js";
 // Error reporting
 export type {
 	ErrorReporter,

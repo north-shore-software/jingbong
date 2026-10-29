@@ -1,6 +1,8 @@
 import { type ChildProcessWithoutNullStreams, spawn } from "node:child_process";
 import crypto from "node:crypto";
 import { EventEmitter } from "node:events";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { cwd } from "node:process";
 import type {
 	IAgentRunner,
@@ -16,6 +18,7 @@ import {
 	ensureOpenCodeStateDirectories,
 } from "./config.js";
 import { OpenCodeMessageFormatter } from "./formatter.js";
+import { buildSandboxArgs } from "./sandbox.js";
 import type {
 	OpenCodeJsonEvent,
 	OpenCodeRunnerConfig,
@@ -387,7 +390,22 @@ export class OpenCodeRunner extends EventEmitter implements IAgentRunner {
 			const inputPrompt = this.buildInputPrompt(prompt);
 			const runtimeEnv = this.buildRuntimeEnv();
 			ensureOpenCodeStateDirectories(runtimeEnv);
-			const child = spawn(this.config.openCodePath || "opencode", args, {
+			const openCode = this.config.openCodePath || "opencode";
+			const [command, commandArgs] = this.config.sandbox
+				? [
+						"bwrap",
+						[
+							...buildSandboxArgs(
+								this.config.sandbox,
+								this.config.cyrusHome || join(homedir(), ".cyrus"),
+								homedir(),
+							),
+							openCode,
+							...args,
+						],
+					]
+				: [openCode, args];
+			const child = spawn(command, commandArgs, {
 				cwd: this.config.workingDirectory || cwd(),
 				env: {
 					...process.env,
@@ -501,6 +519,11 @@ export class OpenCodeRunner extends EventEmitter implements IAgentRunner {
 		return [...this.messages];
 	}
 
+	/** Text of the agent's final assistant message, or null if it had none. */
+	getLastAssistantText(): string | null {
+		return this.lastAssistantText;
+	}
+
 	getFormatter(): IMessageFormatter {
 		return this.formatter;
 	}
@@ -548,15 +571,16 @@ export class OpenCodeRunner extends EventEmitter implements IAgentRunner {
 	}
 
 	private buildArgs(): string[] {
+		// OpenCode v2 dropped `--dir` (the child already runs in
+		// workingDirectory) and only accepts lowercase log levels.
 		const args = [
 			"run",
+			...(this.config.standalone ? ["--standalone"] : []),
 			"--format",
 			"json",
 			"--print-logs",
 			"--log-level",
-			"ERROR",
-			"--dir",
-			this.config.workingDirectory || cwd(),
+			"error",
 			"--title",
 			this.config.title || "Cyrus OpenCode session",
 		];
