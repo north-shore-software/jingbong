@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 
 export interface GitHubAppTokenProviderConfig {
 	appId: string;
+	/** Installation used by getToken() when no repository is named. */
 	installationId: string;
 	privateKeyPath: string;
 	/** GitHub API base URL (default: https://api.github.com) */
@@ -14,12 +15,15 @@ export interface GitHubAppTokenProviderConfig {
  *
  * Uses the App's private key to sign a JWT, then exchanges it for a
  * short-lived installation access token via the GitHub API.
- * Tokens are cached and refreshed 5 minutes before expiry.
+ * Tokens are cached per installation and refreshed 5 minutes before expiry.
+ * The App can be installed on several accounts: getTokenForRepo() finds the
+ * installation that covers a given repository.
  */
 export class GitHubAppTokenProvider {
 	private config: GitHubAppTokenProviderConfig;
-	private cachedToken: string | null = null;
-	private expiresAt = 0;
+	private tokens = new Map<string, { token: string; expiresAt: number }>();
+	/** "owner/repo" (lowercase) -> installation id */
+	private repoInstallations = new Map<string, string>();
 	private privateKeyPromise: Promise<string> | null = null;
 
 	constructor(config: GitHubAppTokenProviderConfig) {
@@ -27,47 +31,75 @@ export class GitHubAppTokenProvider {
 	}
 
 	/**
-	 * Get a valid installation access token.
+	 * Get a valid access token for the configured installation.
 	 * Returns cached token if still valid, otherwise mints a new one.
 	 */
-	async getToken(): Promise<string> {
+	getToken(): Promise<string> {
+		return this.getInstallationToken(this.config.installationId);
+	}
+
+	/**
+	 * Get a valid access token for the installation that covers
+	 * `owner/repo`, which may be on a different account than the configured one.
+	 */
+	async getTokenForRepo(slug: string): Promise<string> {
+		const key = slug.toLowerCase();
+		let installationId = this.repoInstallations.get(key);
+		if (!installationId) {
+			const response = await this.appRequest(`/repos/${slug}/installation`);
+			const data = (await response.json()) as { id: number };
+			installationId = String(data.id);
+			this.repoInstallations.set(key, installationId);
+		}
+		return this.getInstallationToken(installationId);
+	}
+
+	private async getInstallationToken(installationId: string): Promise<string> {
 		// Refresh 5 minutes before expiry
-		if (this.cachedToken && Date.now() < this.expiresAt - 5 * 60 * 1000) {
-			return this.cachedToken;
+		const cached = this.tokens.get(installationId);
+		if (cached && Date.now() < cached.expiresAt - 5 * 60 * 1000) {
+			return cached.token;
 		}
 
-		const pem = await this.loadPrivateKey();
-		const jwt = createAppJwt(this.config.appId, pem);
-		const apiBase = this.config.apiBaseUrl ?? "https://api.github.com";
-
-		const response = await fetch(
-			`${apiBase}/app/installations/${this.config.installationId}/access_tokens`,
-			{
-				method: "POST",
-				headers: {
-					Authorization: `Bearer ${jwt}`,
-					Accept: "application/vnd.github+json",
-					"X-GitHub-Api-Version": "2022-11-28",
-				},
-			},
+		const response = await this.appRequest(
+			`/app/installations/${installationId}/access_tokens`,
+			"POST",
 		);
-
-		if (!response.ok) {
-			const body = await response.text();
-			throw new Error(
-				`[GitHubAppTokenProvider] Failed to create installation token: ${response.status} ${response.statusText} - ${body}`,
-			);
-		}
-
 		const data = (await response.json()) as {
 			token: string;
 			expires_at: string;
 		};
 
-		this.cachedToken = data.token;
-		this.expiresAt = new Date(data.expires_at).getTime();
+		this.tokens.set(installationId, {
+			token: data.token,
+			expiresAt: new Date(data.expires_at).getTime(),
+		});
 
-		return this.cachedToken;
+		return data.token;
+	}
+
+	/** A GitHub API request authenticated as the App itself (JWT). */
+	private async appRequest(path: string, method = "GET"): Promise<Response> {
+		const pem = await this.loadPrivateKey();
+		const jwt = createAppJwt(this.config.appId, pem);
+		const apiBase = this.config.apiBaseUrl ?? "https://api.github.com";
+
+		const response = await fetch(`${apiBase}${path}`, {
+			method,
+			headers: {
+				Authorization: `Bearer ${jwt}`,
+				Accept: "application/vnd.github+json",
+				"X-GitHub-Api-Version": "2022-11-28",
+			},
+		});
+
+		if (!response.ok) {
+			const body = await response.text();
+			throw new Error(
+				`[GitHubAppTokenProvider] Failed to ${path.endsWith("/access_tokens") ? "create installation token" : `look up ${path}`}: ${response.status} ${response.statusText} - ${body}`,
+			);
+		}
+		return response;
 	}
 
 	private loadPrivateKey(): Promise<string> {

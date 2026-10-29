@@ -6,7 +6,7 @@ import type { RepositoryConfig } from "cyrus-core";
 import { runOpenCode } from "./agentRun.js";
 import { openCodeSessionModel } from "./openCodeModel.js";
 import { replyRules } from "./skills.js";
-import { errorMessage, type SkillRunContext, workspaceRepos } from "./types.js";
+import { errorMessage, type SkillRunContext } from "./types.js";
 
 const execFileP = promisify(execFile);
 const run = (
@@ -115,11 +115,7 @@ export async function runBuildSkill(ctx: SkillRunContext): Promise<void> {
 	const { logger } = host;
 	const reply = (body: string) =>
 		tracker.createComment(issue.id, { body, parentId: rootId ?? undefined });
-	const repos = workspaceRepos(ctx.repos, ctx.workspaceId);
-	if (repos.length === 0) {
-		await reply(`⚠️ \`${skill.name}\` found no repository for this workspace.`);
-		return;
-	}
+	const repos = ctx.repos;
 	const checkoutDir = join(
 		host.cyrusHome,
 		"builds",
@@ -144,10 +140,13 @@ export async function runBuildSkill(ctx: SkillRunContext): Promise<void> {
 		if (!botUsername) {
 			throw new Error("GITHUB_BOT_USERNAME is not set");
 		}
-		const appEnv = async (): Promise<NodeJS.ProcessEnv> => {
+		// a repository's own installation: the App may be installed on several accounts
+		const appEnv = async (slug?: string): Promise<NodeJS.ProcessEnv> => {
 			let token: string;
 			try {
-				token = await tokenProvider.getToken();
+				token = slug
+					? await tokenProvider.getTokenForRepo(slug)
+					: await tokenProvider.getToken();
 			} catch (error) {
 				throw new Error(
 					`couldn't get a GitHub App token: ${errorMessage(error)}`,
@@ -225,7 +224,7 @@ export async function runBuildSkill(ctx: SkillRunContext): Promise<void> {
 				const onRemote = await git(
 					c.repo.repositoryPath,
 					["ls-remote", "--heads", "origin", name],
-					{ timeout: 60_000, env: await appEnv() },
+					{ timeout: 60_000, env: await appEnv(c.slug) },
 				);
 				const local = await git(c.repo.repositoryPath, [
 					"branch",
@@ -472,7 +471,7 @@ export async function runBuildSkill(ctx: SkillRunContext): Promise<void> {
 			await git(
 				c.repo.repositoryPath,
 				["push", "origin", `${c.commit}:refs/heads/${branch}`],
-				{ timeout: 180_000, env: await appEnv() },
+				{ timeout: 180_000, env: await appEnv(c.slug) },
 			);
 			c.pushed = true;
 			const e = c.entry ?? {};
@@ -514,7 +513,7 @@ export async function runBuildSkill(ctx: SkillRunContext): Promise<void> {
 				"-",
 			];
 			if (draft) args.push("--draft");
-			const prEnv = await appEnv();
+			const prEnv = await appEnv(c.slug);
 			const url = await new Promise<string>((resolve, reject) => {
 				const child = execFile(
 					"gh",

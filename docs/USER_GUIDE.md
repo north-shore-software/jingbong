@@ -1,7 +1,8 @@
 # Jingbong user guide
 
-Jingbong is a bot that works on Linear issues. It can read and change every
-repository configured for the workspace, both public and private.
+Jingbong is a bot that works on Linear issues. For each issue it works in the
+repositories the issue is routed to (see [Repositories](#repositories)), both
+public and private.
 
 Setting Jingbong up is covered in [SETUP_COMMENT_MODE.md](./SETUP_COMMENT_MODE.md).
 
@@ -25,6 +26,27 @@ Setting Jingbong up is covered in [SETUP_COMMENT_MODE.md](./SETUP_COMMENT_MODE.m
 | `@jingbong cp [focus]` | **Checkpoint.** Reads the whole issue and replies with a suggested title, a write-up of what's been decided, and any open questions. |
 | `@jingbong opt <question>` | **Options.** Lays out every reasonable way to settle a question, with pros and cons and no recommendation. |
 | `@jingbong build [guidance]` | **Build.** Implements the issue and opens a pull request. |
+| `@jingbong repo [name…]` | **Repository.** Chooses the issue's repositories; with no name, says which ones it uses. |
+
+### Repositories
+
+Every request works in the issue's repositories. Jingbong picks them in this
+order:
+
+1. A `[repo=<name>]` tag in the issue description (one tag per repository).
+2. The issue's Linear project, for repositories configured with that project
+   name in `projectKeys`.
+3. Every repository in the workspace that has no routing set up (catch-all).
+
+If none of these match, Jingbong replies that it doesn't know which repository
+the issue belongs to, lists the ones it can use, and holds the request. Reply
+`@jingbong repo <name>` (or several names) and it adds the `[repo=…]` tag to the
+description, replacing any earlier tag, then carries on with the held request.
+Held requests are forgotten if Jingbong restarts; just ask again.
+
+`@jingbong repo` also changes the repositories of an issue that already has
+them. A conversation already running in a thread keeps the repositories it
+started with; start a new thread to use the new ones.
 
 ### Checkpoints (`cp`)
 

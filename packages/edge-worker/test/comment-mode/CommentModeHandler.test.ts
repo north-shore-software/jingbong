@@ -1,18 +1,35 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createLogger } from "cyrus-core";
+import { createLogger, type RepositoryConfig } from "cyrus-core";
 import { LinearIssueTrackerService } from "cyrus-linear-event-transport";
 import { describe, expect, it, vi } from "vitest";
-import { CommentModeHandler } from "../../src/comment-mode/CommentModeHandler.js";
+import {
+	CommentModeHandler,
+	stripRepoTags,
+} from "../../src/comment-mode/CommentModeHandler.js";
 
 const BOT = "bot-1";
 
-function setup({ awaitingAnswer = false } = {}) {
+const repo = (name: string, workspace = "ws-1") =>
+	({
+		id: `id-${name}`,
+		name,
+		linearWorkspaceId: workspace,
+		githubUrl: `https://github.com/acme/${name}`,
+	}) as RepositoryConfig;
+const REPOS = [repo("spock"), repo("mountaineer"), repo("kalaido", "ws-2")];
+
+function setup({
+	awaitingAnswer = false,
+	routed = [REPOS[0]!] as RepositoryConfig[] | null,
+} = {}) {
 	const tracker = Object.create(
 		LinearIssueTrackerService.prototype,
 	) as LinearIssueTrackerService;
 	const createReaction = vi.fn().mockResolvedValue({});
+	const createComment = vi.fn().mockResolvedValue({ id: "reply-1" });
+	const updateIssue = vi.fn().mockResolvedValue({});
 	Object.assign(tracker, {
 		fetchCurrentUser: vi.fn().mockResolvedValue({ id: BOT }),
 		fetchIssue: vi.fn().mockResolvedValue({
@@ -22,7 +39,10 @@ function setup({ awaitingAnswer = false } = {}) {
 			description: "",
 			url: "https://linear.app/acme/issue/DEF-1",
 			team: Promise.resolve({ id: "t1", key: "DEF", name: "Default" }),
+			project: Promise.resolve({ name: "Into the Matrix" }),
 		}),
+		createComment,
+		updateIssue,
 		fetchUser: vi
 			.fn()
 			.mockResolvedValue({ id: "u1", name: "Alice", email: "a@example.com" }),
@@ -35,6 +55,8 @@ function setup({ awaitingAnswer = false } = {}) {
 		awaitingAnswer: vi.fn().mockReturnValue(awaitingAnswer),
 		startSession: vi.fn().mockResolvedValue(undefined),
 		promptSession: vi.fn().mockResolvedValue(undefined),
+		routeRepositories: vi.fn().mockResolvedValue(routed),
+		pinRepositories: vi.fn().mockResolvedValue(undefined),
 	};
 	const cyrusHome = mkdtempSync(join(tmpdir(), "comment-mode-"));
 	const handler = new CommentModeHandler(
@@ -46,7 +68,14 @@ function setup({ awaitingAnswer = false } = {}) {
 		},
 		sessions,
 	);
-	return { handler, sessions, createReaction };
+	return {
+		handler,
+		sessions,
+		tracker,
+		createReaction,
+		createComment,
+		updateIssue,
+	};
 }
 
 const commentWebhook = (body: string, extra: Record<string, unknown> = {}) => ({
@@ -125,10 +154,79 @@ describe("CommentModeHandler", () => {
 		expect(webhook.agentActivity.content.body).toBe("Option B");
 	});
 
+	it("says it doesn't know the repository, then carries on after @jingbong repo", async () => {
+		const { handler, sessions, tracker, createComment, updateIssue } = setup({
+			routed: null,
+		});
+
+		await handler.handleWebhook(commentWebhook("@jingbong fix the bug"), REPOS);
+
+		expect(sessions.startSession).not.toHaveBeenCalled();
+		const [, held] = createComment.mock.calls[0]!;
+		expect(held.parentId).toBe("c1");
+		expect(held.body).toContain("**Into the Matrix** isn't mapped");
+		expect(held.body).toContain("`spock`, `mountaineer`");
+		expect(held.body).not.toContain("kalaido");
+
+		vi.mocked(tracker.fetchIssue).mockResolvedValue({
+			id: "issue-1",
+			identifier: "DEF-1",
+			description: "Some text [repo=old]",
+			team: Promise.resolve({ id: "t1", key: "DEF", name: "Default" }),
+			project: Promise.resolve(undefined),
+		} as never);
+		sessions.routeRepositories.mockResolvedValue([REPOS[1]!]);
+		await handler.handleWebhook(
+			commentWebhook("@jingbong repo Mountaineer", {
+				id: "c2",
+				parentId: "c1",
+			}),
+			REPOS,
+		);
+
+		expect(updateIssue).toHaveBeenCalledWith("issue-1", {
+			description: "Some text\n\n[repo=mountaineer]",
+		});
+		expect(sessions.pinRepositories).toHaveBeenCalledWith("issue-1", [
+			REPOS[1],
+		]);
+		expect(createComment.mock.calls[1]![1].body).toContain(
+			"now uses `mountaineer`",
+		);
+		const [webhook, repos] = sessions.startSession.mock.calls[0]!;
+		expect(webhook.agentSession.id).toBe("cmt_issue-1_c1");
+		expect(repos).toBe(REPOS);
+	});
+
+	it("refuses a repo command naming another workspace's repository", async () => {
+		const { handler, sessions, createComment, updateIssue } = setup();
+
+		await handler.handleWebhook(
+			commentWebhook("@jingbong repo kalaido"),
+			REPOS,
+		);
+
+		expect(updateIssue).not.toHaveBeenCalled();
+		expect(sessions.pinRepositories).not.toHaveBeenCalled();
+		expect(createComment.mock.calls[0]![1].body).toContain(
+			"No repository called `kalaido`",
+		);
+	});
+
 	it("leaves other webhooks to the EdgeWorker", async () => {
 		const { handler } = setup();
 		expect(
 			await handler.handleWebhook({ type: "Issue", action: "update" }, []),
 		).toBe(false);
+	});
+});
+
+describe("stripRepoTags", () => {
+	it("removes bracketed, escaped and bare routing tags", () => {
+		expect(
+			stripRepoTags(
+				"Intro \\[repo=a\\] text\n[repo=b#dev]\nrepos=c,d\nKeep repo/path",
+			),
+		).toBe("Intro  text\n\n\nKeep repo/path");
 	});
 });

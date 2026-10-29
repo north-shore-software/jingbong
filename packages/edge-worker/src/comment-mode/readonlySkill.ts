@@ -9,7 +9,7 @@ import { formatDiscussion, formatIssueThread } from "./issueThread.js";
 import { fetchIssueComments } from "./linearApi.js";
 import { openCodeSessionModel } from "./openCodeModel.js";
 import { replyRules } from "./skills.js";
-import { errorMessage, type SkillRunContext, workspaceRepos } from "./types.js";
+import { errorMessage, type SkillRunContext } from "./types.js";
 
 const run = promisify(execFile);
 
@@ -34,7 +34,7 @@ interface Checkout {
 /**
  * Runs a "mode: readonly" skill outside Cyrus sessions: no issue state
  * change, branch or implementer prompt. The agent gets the issue thread plus
- * fresh detached checkouts of every workspace repository, runs in OpenCode
+ * fresh detached checkouts of the issue's repositories, runs in OpenCode
  * with read-only tools, and its output is posted on the issue.
  */
 export async function runReadonlySkill(ctx: SkillRunContext): Promise<void> {
@@ -48,12 +48,8 @@ export async function runReadonlySkill(ctx: SkillRunContext): Promise<void> {
 		);
 		return;
 	}
-	// every active repo in the workspace (the per-issue cache may predate repos added later)
-	const repos = workspaceRepos(ctx.repos, ctx.workspaceId);
-	if (repos.length === 0) {
-		await reply(`⚠️ \`${skill.name}\` found no repository for this workspace.`);
-		return;
-	}
+	// the issue's repositories, as routed when the request came in
+	const repos = ctx.repos;
 	const checkoutDir = join(
 		host.cyrusHome,
 		"checkpoints",
