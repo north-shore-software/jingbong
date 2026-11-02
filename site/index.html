@@ -9,7 +9,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@900&text=%E6%99%B6%E8%B9%A6&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
@@ -32,13 +31,12 @@
   .muted { color: #666; }
   code { font: inherit; }
 
+  /* Negative margins offset the whitespace inside the PNG, aligning the mark with the text. */
   .logo {
-    font-family: "Noto Serif SC", "Songti SC", "SimSun", serif;
-    font-weight: 900;
-    font-size: clamp(88px, 22vw, 168px);
-    line-height: 1;
-    letter-spacing: .02em;
-    margin: 0 0 28px;
+    display: block;
+    width: 340px;
+    height: auto;
+    margin: -16px 0 19px -22px;
   }
 
   .issue { border: 1px solid #111; background: #fff; padding: 16px 20px; }
@@ -80,7 +78,7 @@
 
   @media (max-width: 480px) {
     main { padding-top: 40px; }
-    .logo { font-size: 72px; margin-bottom: 20px; }
+    .logo { width: 240px; margin: -11px 0 14px -16px; }
   }
 </style>
 </head>
@@ -88,7 +86,7 @@
 <main>
 
   <header>
-    <div class="logo" lang="zh-Hans" aria-hidden="true">晶蹦</div>
+    <img class="logo" src="logo-on-light.png" width="712" height="504" alt="">
     <h1>jingbong</h1>
     <p>An imaginary friend for Linear and GitHub, built for async, multi-threaded development – solo or with friends. Run it in the cloud and keep building on the go from the Linear phone app.</p>
     <p class="muted"><a href="https://github.com/north-shore-software/jingbong">github</a> · <a href="https://github.com/north-shore-software/jingbong/blob/main/docs/USER_GUIDE.md">guide</a> · <a href="#install">full install instructions</a></p>
