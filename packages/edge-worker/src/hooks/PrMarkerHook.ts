@@ -8,7 +8,7 @@ import type { ILogger } from "cyrus-core";
 
 /**
  * The hidden HTML marker that identifies a PR/MR description as Cyrus-authored.
- * Its presence is what tells our GitHub/GitLab webhook handlers that a
+ * Its presence is what tells our GitHub webhook handlers that a
  * "Changes requested" or comment event should be forwarded back to Cyrus.
  */
 export const CYRUS_PR_MARKER = "<!-- generated-by-cyrus -->";
@@ -111,60 +111,6 @@ export class GitHubPrMarkerProvider implements PrMarkerProvider {
 }
 
 /**
- * GitLab provider — uses the `glab` CLI.
- */
-export class GitLabMrMarkerProvider implements PrMarkerProvider {
-	readonly name = "gitlab";
-
-	matches(command: string): boolean {
-		return /\bglab\s+mr\s+(create|update|edit)\b/.test(command);
-	}
-
-	ensureMarker(cwd: string, log: ILogger): void {
-		let payload: { description?: string; iid?: number };
-		try {
-			const json = execFileSync("glab", ["mr", "view", "--output", "json"], {
-				cwd,
-				encoding: "utf8",
-				stdio: ["ignore", "pipe", "ignore"],
-			});
-			payload = JSON.parse(json) as { description?: string; iid?: number };
-		} catch {
-			return;
-		}
-
-		if (typeof payload.iid !== "number") {
-			return;
-		}
-		const updated = appendMarker(payload.description);
-		if (updated === (payload.description ?? "")) {
-			return;
-		}
-
-		const result = spawnSync(
-			"glab",
-			["mr", "update", String(payload.iid), "--description", updated],
-			{
-				cwd,
-				encoding: "utf8",
-				stdio: ["ignore", "pipe", "pipe"],
-			},
-		);
-		if (result.status !== 0) {
-			log.warn(
-				`[PrMarkerHook] glab mr update failed for !${payload.iid}: ${
-					result.stderr?.trim() || "unknown error"
-				}`,
-			);
-			return;
-		}
-		log.info(
-			`[PrMarkerHook] Appended Cyrus marker to GitLab MR !${payload.iid}`,
-		);
-	}
-}
-
-/**
  * Build the PostToolUse hook that ensures Cyrus's identifying marker is
  * present on every PR/MR Cyrus creates or updates.
  *
@@ -175,10 +121,7 @@ export class GitLabMrMarkerProvider implements PrMarkerProvider {
  */
 export function buildPrMarkerHook(
 	log: ILogger,
-	providers: PrMarkerProvider[] = [
-		new GitHubPrMarkerProvider(),
-		new GitLabMrMarkerProvider(),
-	],
+	providers: PrMarkerProvider[] = [new GitHubPrMarkerProvider()],
 ): Partial<Record<HookEvent, HookCallbackMatcher[]>> {
 	return {
 		PostToolUse: [

@@ -19,7 +19,7 @@ import type {
  * drift apart again.
  *
  * Hand-maintained config-copy sites silently dropping new EdgeConfigSchema
- * fields has bitten us repeatedly (`slackAllowedTools` & friends in
+ * fields has bitten us repeatedly (`githubAllowedTools` & friends in
  * CYHOST-967, `strictMcpConfig` in CYPACK-1478). The
  * `_everyEdgeConfigKeyClassified` check below turns that mistake into a
  * compile error: every top-level EdgeConfig key MUST appear in exactly one
@@ -49,17 +49,13 @@ const RELOAD_MERGED_KEYS = [
 	"defaultModel",
 	"defaultFallbackModel",
 	"linearAllowedTools",
-	"slackAllowedTools",
 	"githubAllowedTools",
-	"slackMcpConfigs",
-	"zulipMcpConfigs",
 	"linearMcpConfigs",
 	"githubMcpConfigs",
 	"strictMcpConfig",
 	"defaultDisallowedTools",
 	"issueUpdateTrigger",
 	"maxConcurrentSessions",
-	"slackThreadFollowing",
 	"prReviewTrigger",
 	"userAccessControl",
 	"sandbox",
@@ -344,14 +340,8 @@ export class ConfigManager extends EventEmitter {
 					parsedConfig.defaultFallbackModel || this.config.defaultFallbackModel,
 				linearAllowedTools:
 					parsedConfig.linearAllowedTools || this.config.linearAllowedTools,
-				slackAllowedTools:
-					parsedConfig.slackAllowedTools || this.config.slackAllowedTools,
 				githubAllowedTools:
 					parsedConfig.githubAllowedTools || this.config.githubAllowedTools,
-				slackMcpConfigs:
-					parsedConfig.slackMcpConfigs || this.config.slackMcpConfigs,
-				zulipMcpConfigs:
-					parsedConfig.zulipMcpConfigs || this.config.zulipMcpConfigs,
 				linearMcpConfigs:
 					parsedConfig.linearMcpConfigs || this.config.linearMcpConfigs,
 				githubMcpConfigs:
@@ -368,10 +358,6 @@ export class ConfigManager extends EventEmitter {
 				maxConcurrentSessions:
 					parsedConfig.maxConcurrentSessions ??
 					this.config.maxConcurrentSessions,
-				// Slack thread following: use parsed value if explicitly set,
-				// otherwise keep current or default to true
-				slackThreadFollowing:
-					parsedConfig.slackThreadFollowing ?? this.config.slackThreadFollowing,
 				// PR review trigger: use parsed value if explicitly set,
 				// otherwise keep current or default to true
 				prReviewTrigger:

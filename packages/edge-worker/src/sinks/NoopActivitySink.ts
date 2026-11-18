@@ -7,7 +7,7 @@ import type {
 
 /**
  * A no-op activity sink that silently discards all activities.
- * Used for platforms like Slack where activities are not posted to an external tracker.
+ * Used for sessions where activities are not posted to an external tracker.
  */
 export class NoopActivitySink implements IActivitySink {
 	readonly id: string;

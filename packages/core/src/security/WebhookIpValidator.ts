@@ -16,7 +16,6 @@ import { createLogger, type ILogger } from "../logging/index.js";
  * Published set: https://linear.app/.well-known/appspecific/app.linear.ips.json
  * Plain Linear IPs below match the published /32 entries exactly.
  * GitHub: https://api.github.com/meta (hooks field)
- * GitLab: https://docs.gitlab.com/ee/user/gitlab_com/#ip-range
  */
 export const LINEAR_WEBHOOK_IPS = [
 	"35.231.147.226",
@@ -44,16 +43,7 @@ export const GITHUB_WEBHOOK_CIDRS_FALLBACK = [
 	"143.55.64.0/20",
 ] as const;
 
-/**
- * GitLab.com webhook source IPs.
- * https://docs.gitlab.com/ee/user/gitlab_com/#ip-range
- */
-export const GITLAB_WEBHOOK_CIDRS = [
-	"34.74.90.64/28",
-	"34.74.226.0/24",
-] as const;
-
-export type WebhookProvider = "linear" | "github" | "gitlab";
+export type WebhookProvider = "linear" | "github";
 
 /**
  * Parse a CIDR notation string into a base IP (as 32-bit number) and mask.
@@ -163,7 +153,6 @@ export class WebhookIpValidator {
 		this.allowlists = {
 			linear: [...(custom.linear ?? LINEAR_WEBHOOK_IPS)],
 			github: [...(custom.github ?? GITHUB_WEBHOOK_CIDRS_FALLBACK)],
-			gitlab: [...(custom.gitlab ?? GITLAB_WEBHOOK_CIDRS)],
 		};
 	}
 

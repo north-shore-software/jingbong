@@ -13,7 +13,7 @@ export class StartCommand extends BaseCommand {
 			const repositories = edgeConfig.repositories || [];
 
 			// Always start the EdgeWorker — it handles zero repos gracefully.
-			// Webhook transports (Slack, GitHub) register regardless of repos
+			// Webhook transports (GitHub) register regardless of repos
 			// so URL verification and event reception work during onboarding.
 			await this.app.worker.startEdgeWorker({
 				repositories,

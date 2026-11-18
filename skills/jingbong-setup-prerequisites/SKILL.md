@@ -46,7 +46,7 @@ If any are missing, offer to install them (detect OS via `uname`). Wait for user
 
 ## Step 3: Check for agent-browser (Optional)
 
-If the user selected any integration surface (Linear, GitHub, Slack), check for `agent-browser`:
+If the user selected any integration surface (Linear, GitHub), check for `agent-browser`:
 
 ```bash
 which agent-browser
@@ -60,7 +60,7 @@ npm update -g agent-browser
 
 **If not found**, inform the user:
 
-> `agent-browser` is optional but enables automated app creation for Linear/GitHub/Slack. Without it, you'll be guided through manual setup steps instead.
+> `agent-browser` is optional but enables automated app creation for Linear/GitHub. Without it, you'll be guided through manual setup steps instead.
 >
 > Install with: `npm install -g agent-browser`
 

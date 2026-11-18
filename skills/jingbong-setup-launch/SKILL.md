@@ -23,9 +23,6 @@ grep -c '^LINEAR_CLIENT_ID=' ~/.cyrus/.env 2>/dev/null
 # GitHub
 gh auth status 2>&1 | head -1
 
-# Slack
-grep -c '^SLACK_BOT_TOKEN=' ~/.cyrus/.env 2>/dev/null
-
 # Repositories
 cat ~/.cyrus/config.json 2>/dev/null
 
@@ -48,7 +45,6 @@ Print a formatted summary:
 │  Surfaces:                          │
 │    Linear:  ✓ Workspace connected   │
 │    GitHub:  ✓ CLI authenticated     │
-│    Slack:   ✓ Bot configured        │
 │                                     │
 │  Repositories:                      │
 │    • yourorg/yourrepo               │
@@ -193,8 +189,8 @@ curl -s http://localhost:3456/status
 
 Should return `{"status":"idle"}` or similar.
 
-> Then try assigning a Linear issue to Jingbong, or @mentioning it in Slack, to verify the full pipeline works!
+> Then try assigning a Linear issue to Jingbong, to verify the full pipeline works!
 
 ## Completion
 
-> ✓ Jingbong is running and ready. Assign a Linear issue or @mention in Slack to test it out!
+> ✓ Jingbong is running and ready. Assign a Linear issue to test it out!

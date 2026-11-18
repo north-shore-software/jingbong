@@ -3,7 +3,7 @@
  *
  * This module exports all types and utilities for the internal message bus
  * that provides a unified interface for handling events from multiple
- * webhook sources (Linear, GitHub, Slack, etc.).
+ * webhook sources (Linear, GitHub, etc.).
  *
  * @module messages
  */
@@ -18,28 +18,20 @@ export type {
 // Platform reference types
 export type {
 	GitHubPlatformRef,
-	GitLabPlatformRef,
 	LinearPlatformRef,
-	SlackPlatformRef,
 } from "./platform-refs.js";
 
 // Type guards
 export {
 	hasGitHubSessionStartPlatformData,
 	hasGitHubUserPromptPlatformData,
-	hasGitLabSessionStartPlatformData,
-	hasGitLabUserPromptPlatformData,
 	hasLinearSessionStartPlatformData,
 	hasLinearUserPromptPlatformData,
-	hasSlackSessionStartPlatformData,
-	hasSlackUserPromptPlatformData,
 	isContentUpdateMessage,
 	isGitHubMessage,
-	isGitLabMessage,
 	isIssueStateChangeMessage,
 	isLinearMessage,
 	isSessionStartMessage,
-	isSlackMessage,
 	isStopSignalMessage,
 	isUnassignMessage,
 	isUserPromptMessage,
@@ -50,9 +42,6 @@ export type {
 	ContentUpdateMessage,
 	GitHubSessionStartPlatformData,
 	GitHubUserPromptPlatformData,
-	// GitLab platform data types
-	GitLabSessionStartPlatformData,
-	GitLabUserPromptPlatformData,
 	GuidanceItem,
 	InternalMessage,
 	InternalMessageBase,
@@ -68,9 +57,6 @@ export type {
 	MessageAuthor,
 	MessageSource,
 	SessionStartMessage,
-	// Slack platform data types
-	SlackSessionStartPlatformData,
-	SlackUserPromptPlatformData,
 	StopSignalMessage,
 	UnassignMessage,
 	UserPromptMessage,

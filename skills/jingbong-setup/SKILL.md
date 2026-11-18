@@ -1,11 +1,11 @@
 ---
 name: jingbong-setup
-description: Set up Jingbong end-to-end — install prerequisites, configure authentication, create integrations (Linear, GitHub, Slack), add repositories, and launch. Run this once to get Jingbong running as a background agent.
+description: Set up Jingbong end-to-end — install prerequisites, configure authentication, create integrations (Linear, GitHub), add repositories, and launch. Run this once to get Jingbong running as a background agent.
 ---
 
 # Jingbong Setup
 
-One-command setup for self-hosted Jingbong. This orchestrator walks you through everything needed to run Claude Code as a background agent from Linear, Slack, and GitHub.
+One-command setup for self-hosted Jingbong. This orchestrator walks you through everything needed to run Claude Code as a background agent from Linear and GitHub.
 
 ## CRITICAL Rules
 
@@ -19,7 +19,7 @@ The goal of browser automation in this skill is to **reduce sign-in and setup fa
 
 **Three modes, in order of preference:**
 
-1. **`claude-in-chrome`** (preferred when available) — if the user is running Claude Code and has the `claude-in-chrome` MCP extension connected, use it. This has the huge advantage of using the user's existing Chrome with all their signed-in sessions (Linear, Slack, GitHub). Check availability by seeing if `mcp__claude-in-chrome__*` tools exist.
+1. **`claude-in-chrome`** (preferred when available) — if the user is running Claude Code and has the `claude-in-chrome` MCP extension connected, use it. This has the huge advantage of using the user's existing Chrome with all their signed-in sessions (Linear, GitHub). Check availability by seeing if `mcp__claude-in-chrome__*` tools exist.
 2. **`agent-browser` CLI** — a standalone Playwright-based binary invoked via `Bash`. Requires launching a **fresh Chrome profile** with remote debugging enabled (the user will need to sign in to services in that profile). Check with `which agent-browser`.
 3. **Manual guided flow** — the user follows the agent's step-by-step instructions and does the clicks themselves. Always available as Path B in each sub-skill.
 
@@ -75,7 +75,7 @@ agent-browser screenshot
 agent-browser eval "document.title"
 ```
 
-**Important:** The user will need to **sign in to Linear, Slack, and GitHub** in this fresh Chrome profile before the agent can automate app creation. The agent should navigate to each service and pause for the user to sign in before proceeding with automation.
+**Important:** The user will need to **sign in to Linear and GitHub** in this fresh Chrome profile before the agent can automate app creation. The agent should navigate to each service and pause for the user to sign in before proceeding with automation.
 
 **Cleanup:** After setup is complete, close the Chrome instance:
 
@@ -98,10 +98,8 @@ Each step references a sub-skill file. To execute a sub-skill, **read the SKILL.
 | 3 | setup-endpoint | `jingbong-setup-endpoint/SKILL.md` |
 | 4 | setup-linear | `jingbong-setup-linear/SKILL.md` |
 | 5 | setup-github | `jingbong-setup-github/SKILL.md` |
-| 5b | setup-gitlab | `jingbong-setup-gitlab/SKILL.md` |
-| 6 | setup-slack | `jingbong-setup-slack/SKILL.md` |
-| 7 | setup-repository | `jingbong-setup-repository/SKILL.md` |
-| 8 | setup-launch | `jingbong-setup-launch/SKILL.md` |
+| 6 | setup-repository | `jingbong-setup-repository/SKILL.md` |
+| 7 | setup-launch | `jingbong-setup-launch/SKILL.md` |
 
 To find the files, look for them relative to this file's directory (go up one level, then into the sub-skill directory). For example, if this file is at `~/.claude/skills/jingbong-setup/SKILL.md`, the sub-skills are at `~/.claude/skills/jingbong-setup-prerequisites/SKILL.md`, etc.
 
@@ -117,10 +115,10 @@ Before anything else, collect preferences from the user. **Use the `AskUserQuest
 
 Ask the user (defaults in parentheses):
 
-- **What would you like to name your agent?** — This name appears in Linear, Slack, and GitHub integrations. (default: `Jingbong`)
+- **What would you like to name your agent?** — This name appears in Linear and GitHub integrations. (default: `Jingbong`)
 - **Give your agent a short description** — one sentence, shown in integration app listings. (default: `AI coding agent for automated development`)
 
-Store as `AGENT_NAME` and `AGENT_DESCRIPTION` — used when creating Linear, Slack, and GitHub apps.
+Store as `AGENT_NAME` and `AGENT_DESCRIPTION` — used when creating Linear and GitHub apps.
 
 ### Question 2: Which surfaces?
 
@@ -128,10 +126,8 @@ Ask the user to select one or more:
 
 - **Linear** — issue tracking, recommended for most users
 - **GitHub** — PR comments and issues
-- **GitLab** — MR comments and issues
-- **Slack** — chat messages
 
-At least one is required. Store the selection — it determines which integration sub-skills run (Steps 4-6).
+At least one is required. Store the selection — it determines which integration sub-skills run (Steps 4-5).
 
 ### Question 3: Package manager?
 
@@ -177,29 +173,13 @@ Pass the user's package manager preference from Step 0.
 
 ---
 
-## Step 5b: GitLab (if selected)
-
-**Only if the user selected GitLab in Step 0.**
-
-**Read** the `jingbong-setup-gitlab/SKILL.md` sub-skill and follow its instructions.
-
----
-
-## Step 6: Slack (if selected)
-
-**Only if the user selected Slack in Step 0.**
-
-**Read** the `jingbong-setup-slack/SKILL.md` sub-skill and follow its instructions. **All paths (A-1, A-2, and B) must use the manifest-based creation flow** — never create the Slack app "from scratch" with manual scope/event configuration.
-
----
-
-## Step 7: Add Repositories
+## Step 6: Add Repositories
 
 **Read** the `jingbong-setup-repository/SKILL.md` sub-skill and follow its instructions.
 
 ---
 
-## Step 8: Launch
+## Step 7: Launch
 
 **Read** the `jingbong-setup-launch/SKILL.md` sub-skill and follow its instructions.
 
@@ -210,5 +190,5 @@ Pass the user's package manager preference from Step 0.
 1. **Skip-if-done** — Every sub-skill checks existing state first. Re-running `/setup` is safe.
 2. **Secrets never enter chat** — Credentials are either scraped via agent-browser or written via clipboard-to-env shell commands the user runs in their terminal.
 3. **Agent writes non-secret config** — Values like `CYRUS_SERVER_PORT` and `LINEAR_DIRECT_WEBHOOKS` are written directly by the agent.
-4. **Browser automation when available** — Uses `agent-browser` for Linear/Slack app creation; falls back to guided manual steps if not installed.
+4. **Browser automation when available** — Uses `agent-browser` for Linear app creation; falls back to guided manual steps if not installed.
 5. **Package manager aware** — The user's choice is used consistently throughout.

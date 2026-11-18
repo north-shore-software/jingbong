@@ -450,8 +450,6 @@ The agent automatically moves issues to the "started" state when assigned. Linea
 
 8. **Routing Behavior & Self-Describing Prompts**: When changing repository routing behavior (e.g., description-tag syntax, label routing, base branch overrides, multi-repo support), you **must also update the system prompts that describe these capabilities to Cyrus itself**. The product relies on self-describing prompts so that Cyrus can correctly instruct users and create properly-routed sub-issues. Known locations (not exhaustive):
    - `packages/edge-worker/src/PromptBuilder.ts` — Generates the `<repository_routing_context>` XML block included in session system prompts, documenting routing methods and priority order
-   - `packages/edge-worker/src/SlackChatAdapter.ts` — Builds the Slack chat system prompt including orchestration notes with repo routing syntax
-   - `packages/edge-worker/src/ZulipChatAdapter.ts` — Same, for the Zulip chat system prompt
    - `packages/edge-worker/src/ActivityPoster.ts` — Posts routing activities to Linear timeline (method display names, formatting)
 
 9. **Adding a new top-level `EdgeWorkerConfig` field**: Adding a property to the `EdgeConfigSchema` Zod schema in `packages/core/src/config-schemas.ts` is **not enough** to make it available at runtime. Two hand-maintained copy sites exist, and both now have guardrails that fail fast when a field is missed (added after `strictMcpConfig` was silently dropped in CYPACK-1478; `slackAllowedTools` & friends were dropped the same way in CYHOST-967):
@@ -469,7 +467,7 @@ The agent automatically moves issues to the "started" state when assigned. Linea
 
    Per-repository paths (`repositoryPath`, `workspaceBaseDir`, `mcpConfigPath`, `promptTemplatePath`) are already normalized at three sites in `EdgeWorker.ts`: the constructor, `addNewRepositories`, and `updateModifiedRepositories`. Each builds a `resolvedRepo` via `resolvePath(...)` before inserting into `this.repositories`, so downstream consumers (e.g. `RunnerConfigBuilder`, `McpConfigService.buildMergedMcpConfigPath`) get already-absolute paths.
 
-   **Top-level (non-repo-scoped) path fields are a separate, easy-to-miss codepath.** They live directly on `EdgeWorkerConfig` and are read straight off `this.config.<field>` — they do not go through the repo-resolution loop. When you add one, you must also normalize it. The canonical site for this is `EdgeWorker.normalizeConfigPaths()` (called once in the constructor and once on `configChanged`); add your field there alongside `slackMcpConfigs` / `linearMcpConfigs` / `githubMcpConfigs`.
+   **Top-level (non-repo-scoped) path fields are a separate, easy-to-miss codepath.** They live directly on `EdgeWorkerConfig` and are read straight off `this.config.<field>` — they do not go through the repo-resolution loop. When you add one, you must also normalize it. The canonical site for this is `EdgeWorker.normalizeConfigPaths()` (called once in the constructor and once on `configChanged`); add your field there alongside `linearMcpConfigs` / `githubMcpConfigs`.
 
    Symptom of forgetting this: self-host sessions crash with `ENOENT: no such file or directory, open '~/.cyrus/...'` while cloud sessions (which get absolute paths from cyrus-hosted) work fine. This bit us with the three platform MCP config arrays added in CYHOST-967 / v0.2.53 — they were the only path-bearing fields on `EdgeWorkerConfig` that bypassed normalization, and crashed every self-host session that had a connected platform MCP integration.
 

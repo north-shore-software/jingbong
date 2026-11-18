@@ -1,6 +1,5 @@
 import type { FastifyInstance } from "fastify";
 import { handleCheckGh } from "./handlers/checkGh.js";
-import { handleCheckGlab } from "./handlers/checkGlab.js";
 import { handleConfigureMcp } from "./handlers/configureMcp.js";
 import { handleCyrusConfig } from "./handlers/cyrusConfig.js";
 import { handleCyrusEnv } from "./handlers/cyrusEnv.js";
@@ -18,7 +17,6 @@ import { handleTestMcp } from "./handlers/testMcp.js";
 import type {
 	ApiResponse,
 	CheckGhPayload,
-	CheckGlabPayload,
 	ConfigureMcpPayload,
 	CyrusConfigPayload,
 	CyrusEnvPayload,
@@ -76,7 +74,6 @@ export class ConfigUpdater {
 			this.handleGitHubTokensRoute,
 		);
 		this.registerRoute("/api/check-gh", this.handleCheckGhRoute);
-		this.registerRoute("/api/check-glab", this.handleCheckGlabRoute);
 		this.registerRoute("/api/update/skill", this.handleUpdateSkillRoute);
 		this.registerDeleteRoute("/api/update/skill", this.handleDeleteSkillRoute);
 		this.registerGetRoute("/api/skills", this.handleListSkillsRoute);
@@ -263,15 +260,6 @@ export class ConfigUpdater {
 		payload: CheckGhPayload,
 	): Promise<ApiResponse> {
 		return handleCheckGh(payload, this.cyrusHome);
-	}
-
-	/**
-	 * Handle GitLab CLI check
-	 */
-	private async handleCheckGlabRoute(
-		payload: CheckGlabPayload,
-	): Promise<ApiResponse> {
-		return handleCheckGlab(payload, this.cyrusHome);
 	}
 
 	/**

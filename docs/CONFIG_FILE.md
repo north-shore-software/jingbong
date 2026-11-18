@@ -52,7 +52,7 @@ Learn more about MCP: https://code.claude.com/docs/en/mcp
 
 ### `opencode` (object)
 
-OpenCode sessions run with Cyrus-managed inline runtime config for generated MCP servers and permission rules. By default, Cyrus otherwise inherits the parent process environment for CLI config, state, and cache paths, matching the behavior of other agent providers and allowing tools such as `gh` and `glab` to use your normal terminal authentication. You can opt into dedicated Cyrus-managed OpenCode state globally or per repository with `opencode.stateScope`.
+OpenCode sessions run with Cyrus-managed inline runtime config for generated MCP servers and permission rules. By default, Cyrus otherwise inherits the parent process environment for CLI config, state, and cache paths, matching the behavior of other agent providers and allowing tools such as `gh` to use your normal terminal authentication. You can opt into dedicated Cyrus-managed OpenCode state globally or per repository with `opencode.stateScope`.
 
 Use `opencode.config` when an OpenCode session needs OpenCode-native runtime configuration such as plugins, instructions, formatters, providers, themes, or other OpenCode config keys. It can be configured globally or per repository.
 
@@ -169,10 +169,10 @@ After authentication, keep the same MCP server name (`sentry` in this example) i
 With the default `opencode.stateScope: "inherit"`, OpenCode-launched tools use the same CLI auth storage as the Cyrus process, so authenticate them normally before starting Cyrus, for example:
 
 ```bash
-glab auth login
+gh auth login
 ```
 
-If you set `opencode.stateScope` to `shared` or `repository`, CLIs that store auth under XDG paths, such as `glab`, will use the dedicated Cyrus root instead. To pre-authenticate one of these tools exactly where the agent will look, run the CLI with the matching environment shape.
+If you set `opencode.stateScope` to `shared` or `repository`, CLIs that store auth under XDG paths, such as `gh`, will use the dedicated Cyrus root instead. To pre-authenticate one of these tools exactly where the agent will look, run the CLI with the matching environment shape.
 
 For `shared`:
 
@@ -186,7 +186,7 @@ OPENCODE_CONFIG_DIR="$STATE_ROOT/opencode-config" \
 XDG_STATE_HOME="$STATE_ROOT/state" \
 XDG_CACHE_HOME="$STATE_ROOT/cache" \
 XDG_CONFIG_HOME="$STATE_ROOT/config" \
-glab auth login
+gh auth login
 ```
 
 For `repository`, replace `shared` with `repositories/<repository-id>`, for example `~/.cyrus/opencode-state/repositories/main-app/`. Credentials written this way persist in the configured Cyrus OpenCode state root and are available to later OpenCode sessions using the same scope.
@@ -281,7 +281,7 @@ Routes issues to different AI modes based on Linear labels and optionally config
 
 - **Custom array**: Specify exact tools needed, e.g., `["Read", "Edit", "Task"]`
 
-Note: Linear MCP tools (`mcp__linear`) are always included automatically. Slack MCP tools (`mcp__slack`) are included when the `SLACK_BOT_TOKEN` environment variable is set (Linear and Slack sessions only; excluded from GitHub sessions).
+Note: Linear MCP tools (`mcp__linear`) are always included automatically.
 
 ---
 
@@ -609,7 +609,6 @@ Each repository configuration includes these required fields:
 - `repositoryPath` - Absolute path to the repository on disk
 - `baseBranch` - Default branch for the repository (e.g., "main")
 - `githubUrl` - GitHub repository URL (e.g., `"https://github.com/org/repo"`) — used for webhook matching and routing
-- `gitlabUrl` - GitLab repository URL (e.g., `"https://gitlab.com/group/project"`) — used for webhook matching and routing
 - `workspaceBaseDir` - Directory for git worktrees
 - `isActive` - Whether the repository is active
 - `linearWorkspaceId` - Linear workspace UUID (references a key in `linearWorkspaces`)
