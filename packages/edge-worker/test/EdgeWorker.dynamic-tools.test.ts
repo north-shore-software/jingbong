@@ -1,6 +1,6 @@
 import {
 	LINEAR_DEFAULT_ALLOWED_TOOLS,
-	SLACK_DEFAULT_ALLOWED_TOOLS,
+	READ_ONLY_ALLOWED_TOOLS,
 } from "cyrus-core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TEST_CYRUS_HOME } from "./test-dirs.js";
@@ -114,14 +114,9 @@ import type { EdgeWorkerConfig, RepositoryConfig } from "../src/types.js";
 describe("EdgeWorker - Dynamic Tools Configuration", () => {
 	let edgeWorker: EdgeWorker;
 	let mockConfig: EdgeWorkerConfig;
-	let savedSlackBotToken: string | undefined;
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-
-		// Save and clear SLACK_BOT_TOKEN to ensure deterministic tool lists
-		savedSlackBotToken = process.env.SLACK_BOT_TOKEN;
-		delete process.env.SLACK_BOT_TOKEN;
 
 		// Mock console methods
 		vi.spyOn(console, "log").mockImplementation(() => {});
@@ -205,13 +200,6 @@ describe("EdgeWorker - Dynamic Tools Configuration", () => {
 
 	afterEach(() => {
 		vi.restoreAllMocks();
-
-		// Restore SLACK_BOT_TOKEN
-		if (savedSlackBotToken === undefined) {
-			delete process.env.SLACK_BOT_TOKEN;
-		} else {
-			process.env.SLACK_BOT_TOKEN = savedSlackBotToken;
-		}
 	});
 
 	describe("buildAllowedTools", () => {
@@ -246,9 +234,9 @@ describe("EdgeWorker - Dynamic Tools Configuration", () => {
 			// preset/list includes them.
 
 			// Test debugger prompt with readOnly preset (resolves to the
-			// Slack platform default — the curated read-only set).
+			// curated read-only set).
 			const debuggerTools = buildAllowedTools(repository, "debugger");
-			expect(debuggerTools).toEqual([...SLACK_DEFAULT_ALLOWED_TOOLS]);
+			expect(debuggerTools).toEqual([...READ_ONLY_ALLOWED_TOOLS]);
 
 			// Test builder prompt with custom array (returned verbatim).
 			const builderTools = buildAllowedTools(repository, "builder");
@@ -345,32 +333,6 @@ describe("EdgeWorker - Dynamic Tools Configuration", () => {
 			expect(LINEAR_DEFAULT_ALLOWED_TOOLS).toContain("mcp__linear");
 			expect(LINEAR_DEFAULT_ALLOWED_TOOLS).toContain("mcp__cyrus-tools");
 			expect(LINEAR_DEFAULT_ALLOWED_TOOLS).not.toContain("mcp__cyrus-docs");
-		});
-
-		it("should NOT auto-append mcp__slack regardless of SLACK_BOT_TOKEN — Slack uses its own platform list", () => {
-			const originalSlackToken = process.env.SLACK_BOT_TOKEN;
-			try {
-				process.env.SLACK_BOT_TOKEN = "xoxb-test-slack-token";
-
-				const repository: RepositoryConfig = {
-					...mockConfig.repositories[0],
-					allowedTools: ["Read", "Write"],
-				};
-
-				const buildAllowedTools = getBuildAllowedTools(edgeWorker);
-				const tools = buildAllowedTools(repository);
-
-				// Linear path returns the repo list verbatim. mcp__slack lives in
-				// SLACK_DEFAULT_ALLOWED_TOOLS only and is never appended here.
-				expect(tools).toEqual(["Read", "Write"]);
-				expect(tools).not.toContain("mcp__slack");
-			} finally {
-				if (originalSlackToken === undefined) {
-					delete process.env.SLACK_BOT_TOKEN;
-				} else {
-					process.env.SLACK_BOT_TOKEN = originalSlackToken;
-				}
-			}
 		});
 
 		it("should handle backward compatibility with old array-based labelPrompts", () => {

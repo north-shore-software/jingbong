@@ -9,7 +9,6 @@ import {
 	buildPrMarkerHook,
 	CYRUS_PR_MARKER,
 	GitHubPrMarkerProvider,
-	GitLabMrMarkerProvider,
 	type PrMarkerProvider,
 } from "../src/hooks/PrMarkerHook.js";
 
@@ -87,25 +86,6 @@ describe("GitHubPrMarkerProvider.matches", () => {
 		// false-positive. The provider's ensureMarker is idempotent and a no-op
 		// when there's no PR. Sanity-check the truly unrelated ones here.
 		if (cmd === "echo gh pr create") return;
-		expect(provider.matches(cmd)).toBe(false);
-	});
-});
-
-describe("GitLabMrMarkerProvider.matches", () => {
-	const provider = new GitLabMrMarkerProvider();
-
-	it.each([
-		"glab mr create --draft",
-		"glab mr update 5 --description x",
-		"glab mr edit",
-	])("matches %s", (cmd) => {
-		expect(provider.matches(cmd)).toBe(true);
-	});
-
-	it.each([
-		"glab issue create",
-		"gh mr create",
-	])("rejects unrelated command: %s", (cmd) => {
 		expect(provider.matches(cmd)).toBe(false);
 	});
 });

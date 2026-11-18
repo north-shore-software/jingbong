@@ -23,9 +23,6 @@
 					"githubUrl": {
 						"type": "string"
 					},
-					"gitlabUrl": {
-						"type": "string"
-					},
 					"linearWorkspaceId": {
 						"type": "string"
 					},
@@ -615,25 +612,7 @@
 				"type": "string"
 			}
 		},
-		"slackAllowedTools": {
-			"type": "array",
-			"items": {
-				"type": "string"
-			}
-		},
 		"githubAllowedTools": {
-			"type": "array",
-			"items": {
-				"type": "string"
-			}
-		},
-		"slackMcpConfigs": {
-			"type": "array",
-			"items": {
-				"type": "string"
-			}
-		},
-		"zulipMcpConfigs": {
 			"type": "array",
 			"items": {
 				"type": "string"
@@ -661,9 +640,6 @@
 			"type": "integer",
 			"exclusiveMinimum": 0,
 			"maximum": 9007199254740991
-		},
-		"slackThreadFollowing": {
-			"type": "boolean"
 		},
 		"prReviewTrigger": {
 			"type": "boolean"

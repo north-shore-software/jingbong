@@ -181,7 +181,7 @@ grep -q '^LINEAR_DIRECT_WEBHOOKS=' ~/.cyrus/.env 2>/dev/null || printf 'LINEAR_D
 grep -q '^CYRUS_HOST_EXTERNAL=' ~/.cyrus/.env 2>/dev/null || printf 'CYRUS_HOST_EXTERNAL=true\n' >> ~/.cyrus/.env
 ```
 
-`LINEAR_DIRECT_WEBHOOKS=true` enables direct Linear webhook signature verification. `CYRUS_HOST_EXTERNAL=true` enables direct Slack and GitHub webhook signature verification. Both are required for self-hosted setups where webhooks come directly from the services (not forwarded through CYHOST).
+`LINEAR_DIRECT_WEBHOOKS=true` enables direct Linear webhook signature verification. `CYRUS_HOST_EXTERNAL=true` enables direct GitHub webhook signature verification. Both are required for self-hosted setups where webhooks come directly from the services (not forwarded through CYHOST).
 
 ## Completion
 

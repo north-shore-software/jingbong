@@ -423,13 +423,11 @@ export class RepositoryRouter {
 
 					let isMatch = false;
 
-					// Match by GitHub/GitLab URL path segment (e.g., "org/repo-name" or "repo-name")
+					// Match by GitHub URL path segment (e.g., "org/repo-name" or "repo-name")
 					// Use endsWith to avoid substring false positives (e.g., "cyrus" matching "cyrus-hosted")
 					if (
 						repo.githubUrl?.endsWith(`/${repoTag.repo}`) ||
-						repo.githubUrl?.endsWith(`/${repoTag.repo}.git`) ||
-						repo.gitlabUrl?.endsWith(`/${repoTag.repo}`) ||
-						repo.gitlabUrl?.endsWith(`/${repoTag.repo}.git`)
+						repo.githubUrl?.endsWith(`/${repoTag.repo}.git`)
 					) {
 						this.logger.debug(
 							`Matched repo tag "${repoTag.repo}" to repository ${repo.name} via hosting URL`,
@@ -651,7 +649,7 @@ export class RepositoryRouter {
 
 		// Create repository options
 		const options = workspaceRepos.map((repo) => ({
-			value: repo.githubUrl || repo.gitlabUrl || repo.name,
+			value: repo.githubUrl || repo.name,
 		}));
 
 		// Post elicitation activity
@@ -739,12 +737,9 @@ export class RepositoryRouter {
 			.trim()
 			.replace(/^\[([^\]]+)\]\(<?[^)>]*>?\)$/, "$1");
 
-		// Find selected repository by GitHub/GitLab URL or name
+		// Find selected repository by GitHub URL or name
 		const selectedRepo = pendingData.workspaceRepos.find(
-			(repo) =>
-				repo.githubUrl === reply ||
-				repo.gitlabUrl === reply ||
-				repo.name === reply,
+			(repo) => repo.githubUrl === reply || repo.name === reply,
 		);
 
 		// Fallback to first repository if not found

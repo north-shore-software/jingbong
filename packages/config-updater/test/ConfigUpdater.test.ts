@@ -21,9 +21,6 @@ vi.mock("../src/handlers/configureMcp.js", () => ({
 vi.mock("../src/handlers/checkGh.js", () => ({
 	handleCheckGh: vi.fn().mockResolvedValue({ success: true }),
 }));
-vi.mock("../src/handlers/checkGlab.js", () => ({
-	handleCheckGlab: vi.fn().mockResolvedValue({ success: true }),
-}));
 vi.mock("../src/handlers/skills.js", () => ({
 	handleUpdateSkill: vi.fn().mockResolvedValue({ success: true }),
 	handleDeleteSkill: vi.fn().mockResolvedValue({ success: true }),

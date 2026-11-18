@@ -2,18 +2,13 @@
  * Internal Message Bus Types
  *
  * This module defines the unified internal message types that all external
- * webhook sources (Linear, GitHub, Slack, etc.) translate to. This enables
+ * webhook sources (Linear, GitHub, etc.) translate to. This enables
  * the EdgeWorker to process events from any platform using a consistent interface.
  *
  * @module messages/types
  */
 
-import type {
-	GitHubPlatformRef,
-	GitLabPlatformRef,
-	LinearPlatformRef,
-	SlackPlatformRef,
-} from "./platform-refs.js";
+import type { GitHubPlatformRef, LinearPlatformRef } from "./platform-refs.js";
 
 // ============================================================================
 // MESSAGE ACTION TYPES
@@ -34,7 +29,7 @@ export type MessageAction =
 /**
  * Platform source identifier.
  */
-export type MessageSource = "linear" | "github" | "gitlab" | "slack";
+export type MessageSource = "linear" | "github";
 
 // ============================================================================
 // AUTHOR TYPES
@@ -74,7 +69,6 @@ export interface InternalMessageBase {
 	 * Session identifier for grouping related messages.
 	 * - Linear: agentSession.id
 	 * - GitHub: owner/repo#pr (e.g., "ceedaragents/cyrus#123")
-	 * - Slack: channel:thread_ts
 	 */
 	sessionKey: string;
 	/** Work item ID (issue ID, PR ID, etc.) */
@@ -139,36 +133,6 @@ export interface GitHubSessionStartPlatformData {
 }
 
 /**
- * GitLab-specific platform data for session start.
- */
-export interface GitLabSessionStartPlatformData {
-	/** The event type that triggered this session */
-	eventType: "note" | "merge_request";
-	/** Project information */
-	project: GitLabPlatformRef["project"];
-	/** Merge request information (if available) */
-	mergeRequest?: GitLabPlatformRef["mergeRequest"];
-	/** The note that triggered this session */
-	note: GitLabPlatformRef["note"];
-	/** GitLab access token for API access */
-	accessToken?: string;
-}
-
-/**
- * Slack-specific platform data for session start.
- */
-export interface SlackSessionStartPlatformData {
-	/** Channel where the mention occurred */
-	channel: SlackPlatformRef["channel"];
-	/** Thread information */
-	thread: SlackPlatformRef["thread"];
-	/** The message that triggered this session */
-	message: SlackPlatformRef["message"];
-	/** Slack Bot token for API access */
-	slackBotToken?: string;
-}
-
-/**
  * Session start message - initiates a new agent session.
  * Triggered by: Linear delegation, PR mention, thread start, etc.
  */
@@ -183,11 +147,7 @@ export interface SessionStartMessage extends InternalMessageBase {
 	/** Labels attached to the work item */
 	labels?: string[];
 	/** Platform-specific data preserved for handlers that need it */
-	platformData:
-		| LinearSessionStartPlatformData
-		| GitHubSessionStartPlatformData
-		| GitLabSessionStartPlatformData
-		| SlackSessionStartPlatformData;
+	platformData: LinearSessionStartPlatformData | GitHubSessionStartPlatformData;
 }
 
 // ============================================================================
@@ -222,34 +182,6 @@ export interface GitHubUserPromptPlatformData {
 }
 
 /**
- * GitLab-specific platform data for user prompt.
- */
-export interface GitLabUserPromptPlatformData {
-	/** The event type */
-	eventType: "note" | "merge_request";
-	/** Project information */
-	project: GitLabPlatformRef["project"];
-	/** The note containing the prompt */
-	note: GitLabPlatformRef["note"];
-	/** GitLab access token for API access */
-	accessToken?: string;
-}
-
-/**
- * Slack-specific platform data for user prompt.
- */
-export interface SlackUserPromptPlatformData {
-	/** Channel where the message was sent */
-	channel: SlackPlatformRef["channel"];
-	/** Thread information */
-	thread: SlackPlatformRef["thread"];
-	/** The message containing the prompt */
-	message: SlackPlatformRef["message"];
-	/** Slack Bot token for API access */
-	slackBotToken?: string;
-}
-
-/**
  * User prompt message - a user message during an active session.
  * Triggered by: Mid-session comments, follow-up questions, etc.
  */
@@ -258,11 +190,7 @@ export interface UserPromptMessage extends InternalMessageBase {
 	/** The user's message content */
 	content: string;
 	/** Platform-specific data */
-	platformData:
-		| LinearUserPromptPlatformData
-		| GitHubUserPromptPlatformData
-		| GitLabUserPromptPlatformData
-		| SlackUserPromptPlatformData;
+	platformData: LinearUserPromptPlatformData | GitHubUserPromptPlatformData;
 }
 
 // ============================================================================

@@ -33,10 +33,6 @@ vi.mock("cyrus-cloudflare-tunnel-client", () => ({
 	getCyrusAppUrl: vi.fn(),
 }));
 
-vi.mock("cyrus-slack-event-transport", () => ({
-	SlackEventTransport: vi.fn(),
-}));
-
 const { WorkerService } = await import("./WorkerService.js");
 
 const repository: RepositoryConfig = {
@@ -116,15 +112,11 @@ describe("WorkerService", () => {
 			linearAllowedTools: ["Read"],
 			defaultAllowedTools: ["Edit"],
 			defaultDisallowedTools: ["WebSearch"],
-			slackAllowedTools: ["Read"],
 			githubAllowedTools: ["Bash"],
-			slackMcpConfigs: ["~/slack.json"],
-			zulipMcpConfigs: ["~/zulip.json"],
 			linearMcpConfigs: ["~/linear.json"],
 			githubMcpConfigs: ["~/github.json"],
 			strictMcpConfig: false,
 			issueUpdateTrigger: false,
-			slackThreadFollowing: false,
 			prReviewTrigger: false,
 			userAccessControl: { allowedUsers: ["usr_1"] },
 			promptDefaults: { debugger: { allowedTools: ["Read"] } },

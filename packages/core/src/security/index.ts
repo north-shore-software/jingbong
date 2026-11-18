@@ -4,7 +4,6 @@ export type {
 } from "./WebhookIpValidator.js";
 export {
 	GITHUB_WEBHOOK_CIDRS_FALLBACK,
-	GITLAB_WEBHOOK_CIDRS,
 	ipMatchesAllowlist,
 	ipMatchesCidr,
 	ipToNumber,

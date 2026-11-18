@@ -20,7 +20,7 @@ export type TranslationResult =
 /**
  * Interface for platform-specific message translators.
  *
- * Each platform (Linear, GitHub, Slack) implements this interface to translate
+ * Each platform (Linear, GitHub) implements this interface to translate
  * their webhook payloads into the unified InternalMessage format.
  *
  * @typeParam TWebhook - The platform-specific webhook payload type

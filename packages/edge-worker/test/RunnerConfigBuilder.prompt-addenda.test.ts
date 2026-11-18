@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { BROWSER_USE_PROMPT_ADDENDUM } from "../src/prompts/browserUsePromptAddendum.js";
 import { GITHUB_CLI_MEDIA_PROMPT_ADDENDUM } from "../src/prompts/githubCliMediaPromptAddendum.js";
 import {
-	type IChatToolResolver,
 	type IMcpConfigProvider,
 	type IRunnerSelector,
 	RunnerConfigBuilder,
@@ -17,9 +16,6 @@ const silentLogger: ILogger = {
 } as unknown as ILogger;
 
 function makeBuilder(): RunnerConfigBuilder {
-	const chatToolResolver: IChatToolResolver = {
-		buildChatAllowedTools: () => ["Read(**)"],
-	};
 	const mcpConfigProvider: IMcpConfigProvider = {
 		buildMcpConfig: () => ({}),
 		buildMergedMcpConfigPath: () => undefined,
@@ -30,25 +26,7 @@ function makeBuilder(): RunnerConfigBuilder {
 		getDefaultModelForRunner: () => "",
 		getDefaultFallbackModelForRunner: () => "",
 	};
-	return new RunnerConfigBuilder(
-		chatToolResolver,
-		mcpConfigProvider,
-		runnerSelector,
-	);
-}
-
-function buildChatPrompt(builder: RunnerConfigBuilder): string | undefined {
-	return builder.buildChatConfig({
-		workspacePath: "/tmp/chat-workspace",
-		workspaceName: "chat-thread",
-		systemPrompt: "Base prompt.",
-		sessionId: "chat-session",
-		cyrusHome: "/tmp/cyrus",
-		platformName: "slack",
-		logger: silentLogger,
-		onMessage: () => {},
-		onError: () => {},
-	}).appendSystemPrompt;
+	return new RunnerConfigBuilder(mcpConfigProvider, runnerSelector);
 }
 
 function buildIssuePrompt(builder: RunnerConfigBuilder): string | undefined {
@@ -91,12 +69,6 @@ describe("RunnerConfigBuilder prompt addenda", () => {
 		else process.env.CYRUS_CLOUD_RUNTIME = originalCloudRuntime;
 	});
 
-	it("always adds GitHub media guidance to chat prompts while browser use remains disabled", () => {
-		expect(buildChatPrompt(makeBuilder())).toBe(
-			`Base prompt.\n\n${GITHUB_CLI_MEDIA_PROMPT_ADDENDUM}`,
-		);
-	});
-
 	it("always adds GitHub media guidance to issue prompts while browser use remains disabled", () => {
 		expect(buildIssuePrompt(makeBuilder())).toBe(
 			`Base prompt.\n\n${GITHUB_CLI_MEDIA_PROMPT_ADDENDUM}`,
@@ -106,7 +78,7 @@ describe("RunnerConfigBuilder prompt addenda", () => {
 	it("adds browser guidance separately when its environment flag is enabled", () => {
 		process.env.CYRUS_BROWSER_USE_ENABLED = "true";
 
-		expect(buildChatPrompt(makeBuilder())).toBe(
+		expect(buildIssuePrompt(makeBuilder())).toBe(
 			`Base prompt.\n\n${BROWSER_USE_PROMPT_ADDENDUM}\n\n${GITHUB_CLI_MEDIA_PROMPT_ADDENDUM}`,
 		);
 	});

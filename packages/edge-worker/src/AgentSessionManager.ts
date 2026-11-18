@@ -147,7 +147,7 @@ export class AgentSessionManager extends EventEmitter {
 	 * @param issueId - Issue/PR identifier
 	 * @param issueMinimal - Minimal issue data
 	 * @param workspace - Workspace configuration
-	 * @param platform - Source platform ("linear", "github", "gitlab", "slack"). Defaults to "linear".
+	 * @param platform - Source platform ("linear", "github"). Defaults to "linear".
 	 *                   Only "linear" sessions will have activities streamed to Linear.
 	 * @param repositories - Repository contexts for the session (defaults to empty array)
 	 */
@@ -156,7 +156,7 @@ export class AgentSessionManager extends EventEmitter {
 		issueId: string,
 		issueMinimal: IssueMinimal,
 		workspace: Workspace,
-		platform: "linear" | "github" | "gitlab" | "slack" = "linear",
+		platform: "linear" | "github" = "linear",
 		repositories: RepositoryContext[] = [],
 	): CyrusAgentSession {
 		const log = this.logger.withContext({
@@ -187,42 +187,6 @@ export class AgentSessionManager extends EventEmitter {
 		};
 
 		// Store locally
-		this.sessions.set(sessionId, agentSession);
-		this.entries.set(sessionId, []);
-
-		return agentSession;
-	}
-
-	/**
-	 * Create an agent session for chat-style platforms (Slack, etc.) that are
-	 * not tied to a specific issue or repository.
-	 *
-	 * Unlike {@link createCyrusAgentSession}, this does NOT require issue
-	 * context — the session lives in a standalone workspace with no issue
-	 * tracker linkage.
-	 *
-	 * @param repositories - Repository contexts for the session (defaults to empty array for chatbot sessions)
-	 */
-	createChatSession(
-		sessionId: string,
-		workspace: Workspace,
-		platform: string,
-		repositories: RepositoryContext[] = [],
-	): CyrusAgentSession {
-		const log = this.logger.withContext({ sessionId, platform });
-		log.info("Creating chat session");
-
-		const agentSession: CyrusAgentSession = {
-			id: sessionId,
-			type: AgentSessionType.CommentThread,
-			status: AgentSessionStatus.Active,
-			context: AgentSessionType.CommentThread,
-			createdAt: Date.now(),
-			updatedAt: Date.now(),
-			repositories,
-			workspace,
-		};
-
 		this.sessions.set(sessionId, agentSession);
 		this.entries.set(sessionId, []);
 

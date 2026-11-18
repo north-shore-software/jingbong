@@ -35,12 +35,9 @@ export interface McpConfigServiceDeps {
  * Single source of truth for MCP server configuration assembly.
  *
  * Handles:
- * - Building inline MCP server configs (Linear, cyrus-tools, Slack)
+ * - Building inline MCP server configs (Linear, cyrus-tools)
  * - Merging file-based MCP config paths from repositories
  * - Cyrus-tools MCP context lifecycle management
- *
- * Both EdgeWorker (issue sessions) and ChatSessionHandler (chat sessions)
- * consume this service instead of duplicating MCP config logic.
  */
 export class McpConfigService {
 	private deps: McpConfigServiceDeps;
@@ -52,13 +49,13 @@ export class McpConfigService {
 
 	/**
 	 * Build MCP configuration with automatic Linear server injection and cyrus-tools over Fastify MCP.
-	 * Workspace-level servers (Linear, cyrus-tools, Slack) are configured once using workspace-level token.
+	 * Workspace-level servers (Linear, cyrus-tools) are configured once using workspace-level token.
 	 *
 	 * Whether the agent can actually CALL into any of these servers is gated
-	 * by the per-platform allowed-tools array (`teams.{linear,slack,github}_allowed_tools`),
+	 * by the per-platform allowed-tools array (`teams.{linear,github}_allowed_tools`),
 	 * not by anything done here — so it's safe to always spin them up when
-	 * their underlying transport credentials exist (Slack inline via
-	 * `SLACK_BOT_TOKEN`, Linear via the workspace's Linear token, etc.).
+	 * their underlying transport credentials exist (Linear via the
+	 * workspace's Linear token, etc.).
 	 *
 	 * @param repoId - Repository ID for MCP context scoping
 	 * @param linearWorkspaceId - Linear workspace ID (from webhook.organizationId or repo config)
@@ -119,20 +116,6 @@ export class McpConfigService {
 				},
 			},
 		};
-
-		// Inject the Slack MCP server whenever SLACK_BOT_TOKEN is available —
-		// per-platform availability is enforced upstream by the allowed-tools
-		// array. https://github.com/korotovsky/slack-mcp-server
-		const slackBotToken = process.env.SLACK_BOT_TOKEN?.trim();
-		if (slackBotToken) {
-			mcpConfig.slack = {
-				command: "npx",
-				args: ["-y", "slack-mcp-server@1.2.3", "--transport", "stdio"],
-				env: {
-					SLACK_MCP_XOXB_TOKEN: slackBotToken,
-				},
-			};
-		}
 
 		return mcpConfig;
 	}

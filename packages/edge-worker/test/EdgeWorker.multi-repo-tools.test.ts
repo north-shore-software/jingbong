@@ -128,7 +128,7 @@ vi.mock("fs/promises", () => ({
 import { LinearClient } from "@linear/sdk";
 import {
 	LINEAR_DEFAULT_ALLOWED_TOOLS,
-	SLACK_DEFAULT_ALLOWED_TOOLS,
+	READ_ONLY_ALLOWED_TOOLS,
 } from "cyrus-core";
 import { LinearEventTransport } from "cyrus-linear-event-transport";
 import { AgentSessionManager } from "../src/AgentSessionManager.js";
@@ -139,13 +139,9 @@ import type { EdgeWorkerConfig, RepositoryConfig } from "../src/types.js";
 describe("EdgeWorker - Multi-Repo Tool Authorization", () => {
 	let edgeWorker: EdgeWorker;
 	let mockConfig: EdgeWorkerConfig;
-	let savedSlackBotToken: string | undefined;
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-
-		savedSlackBotToken = process.env.SLACK_BOT_TOKEN;
-		delete process.env.SLACK_BOT_TOKEN;
 
 		vi.spyOn(console, "log").mockImplementation(() => {});
 		vi.spyOn(console, "error").mockImplementation(() => {});
@@ -232,12 +228,6 @@ describe("EdgeWorker - Multi-Repo Tool Authorization", () => {
 
 	afterEach(() => {
 		vi.restoreAllMocks();
-
-		if (savedSlackBotToken === undefined) {
-			delete process.env.SLACK_BOT_TOKEN;
-		} else {
-			process.env.SLACK_BOT_TOKEN = savedSlackBotToken;
-		}
 	});
 
 	describe("buildAllowedTools - multi-repo union", () => {
@@ -280,10 +270,10 @@ describe("EdgeWorker - Multi-Repo Tool Authorization", () => {
 			const buildAllowedTools = getBuildAllowedTools(edgeWorker);
 			const tools = buildAllowedTools([repoA, repoB], "debugger");
 
-			// "readOnly" preset resolves to SLACK_DEFAULT_ALLOWED_TOOLS
+			// "readOnly" preset resolves to READ_ONLY_ALLOWED_TOOLS
 			// (the curated read-only set). Union with repoB's verbatim list.
 			const expectedUnion = [
-				...new Set([...SLACK_DEFAULT_ALLOWED_TOOLS, "Read", "Bash", "Edit"]),
+				...new Set([...READ_ONLY_ALLOWED_TOOLS, "Read", "Bash", "Edit"]),
 			];
 			expect(tools).toEqual(expectedUnion);
 		});
@@ -306,26 +296,6 @@ describe("EdgeWorker - Multi-Repo Tool Authorization", () => {
 
 			expect(tools).toEqual(["Read", "Write"]);
 			expect(tools).not.toContain("mcp__linear");
-		});
-
-		it("should NOT auto-append mcp__slack regardless of SLACK_BOT_TOKEN", () => {
-			process.env.SLACK_BOT_TOKEN = "xoxb-test-token";
-
-			const repoA: RepositoryConfig = {
-				...mockConfig.repositories[0],
-				allowedTools: ["Read"],
-			};
-			const repoB: RepositoryConfig = {
-				...mockConfig.repositories[1],
-				allowedTools: ["Write"],
-			};
-
-			const buildAllowedTools = getBuildAllowedTools(edgeWorker);
-			const tools = buildAllowedTools([repoA, repoB]);
-
-			// mcp__slack only lives in SLACK_DEFAULT_ALLOWED_TOOLS, never
-			// auto-injected into Linear/GitHub paths.
-			expect(tools).not.toContain("mcp__slack");
 		});
 
 		it("should handle empty repository array with global defaults", () => {

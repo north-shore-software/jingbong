@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	GITHUB_WEBHOOK_CIDRS_FALLBACK,
-	GITLAB_WEBHOOK_CIDRS,
 	ipMatchesAllowlist,
 	ipMatchesCidr,
 	ipToNumber,
@@ -178,10 +177,6 @@ describe("Known provider allowlists", () => {
 	it("has GitHub fallback CIDRs", () => {
 		expect(GITHUB_WEBHOOK_CIDRS_FALLBACK.length).toBeGreaterThan(0);
 	});
-
-	it("has GitLab CIDRs", () => {
-		expect(GITLAB_WEBHOOK_CIDRS.length).toBeGreaterThan(0);
-	});
 });
 
 describe("WebhookIpValidator", () => {
@@ -209,9 +204,6 @@ describe("WebhookIpValidator", () => {
 			expect(validator.getAllowlist("linear")).toEqual([...LINEAR_WEBHOOK_IPS]);
 			expect(validator.getAllowlist("github")).toEqual([
 				...GITHUB_WEBHOOK_CIDRS_FALLBACK,
-			]);
-			expect(validator.getAllowlist("gitlab")).toEqual([
-				...GITLAB_WEBHOOK_CIDRS,
 			]);
 		});
 

@@ -65,9 +65,6 @@ importers:
       cyrus-edge-worker:
         specifier: workspace:*
         version: link:../../packages/edge-worker
-      cyrus-slack-event-transport:
-        specifier: workspace:*
-        version: link:../../packages/slack-event-transport
       dotenv:
         specifier: ^16.5.0
         version: 16.6.1
@@ -123,9 +120,6 @@ importers:
       cyrus-edge-worker:
         specifier: workspace:*
         version: link:../../packages/edge-worker
-      cyrus-slack-event-transport:
-        specifier: workspace:*
-        version: link:../../packages/slack-event-transport
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
@@ -331,9 +325,6 @@ importers:
       cyrus-github-event-transport:
         specifier: workspace:*
         version: link:../github-event-transport
-      cyrus-gitlab-event-transport:
-        specifier: workspace:*
-        version: link:../gitlab-event-transport
       cyrus-linear-event-transport:
         specifier: workspace:*
         version: link:../linear-event-transport
@@ -346,12 +337,6 @@ importers:
       cyrus-simple-agent-runner:
         specifier: workspace:*
         version: link:../simple-agent-runner
-      cyrus-slack-event-transport:
-        specifier: workspace:*
-        version: link:../slack-event-transport
-      cyrus-zulip-event-transport:
-        specifier: workspace:*
-        version: link:../zulip-event-transport
       fastify:
         specifier: ^5.12.7
         version: 5.12.7
@@ -431,25 +416,6 @@ importers:
         version: 4.1.12(@opentelemetry/api@1.9.1)(@types/node@20.19.39)(@vitest/coverage-v8@4.1.12)(@vitest/ui@4.1.12)(vite@8.3.4(@types/node@20.19.39)(esbuild@0.28.1)(tsx@4.23.0)(yaml@2.8.3))
 
   packages/github-event-transport:
-    dependencies:
-      cyrus-core:
-        specifier: workspace:*
-        version: link:../core
-      fastify:
-        specifier: ^5.12.7
-        version: 5.12.7
-    devDependencies:
-      '@types/node':
-        specifier: ^20.0.0
-        version: 20.19.39
-      '@typescript/native-preview':
-        specifier: 7.0.0-dev.20260707.2
-        version: 7.0.0-dev.20260707.2
-      vitest:
-        specifier: ^4.1.12
-        version: 4.1.12(@opentelemetry/api@1.9.1)(@types/node@20.19.39)(@vitest/coverage-v8@4.1.12)(@vitest/ui@4.1.12)(vite@8.3.4(@types/node@20.19.39)(esbuild@0.28.1)(tsx@4.23.0)(yaml@2.8.3))
-
-  packages/gitlab-event-transport:
     dependencies:
       cyrus-core:
         specifier: workspace:*
@@ -551,44 +517,6 @@ importers:
       cyrus-core:
         specifier: workspace:*
         version: link:../core
-    devDependencies:
-      '@types/node':
-        specifier: ^20.0.0
-        version: 20.19.39
-      '@typescript/native-preview':
-        specifier: 7.0.0-dev.20260707.2
-        version: 7.0.0-dev.20260707.2
-      vitest:
-        specifier: ^4.1.12
-        version: 4.1.12(@opentelemetry/api@1.9.1)(@types/node@20.19.39)(@vitest/coverage-v8@4.1.12)(@vitest/ui@4.1.12)(vite@8.3.4(@types/node@20.19.39)(esbuild@0.28.1)(tsx@4.23.0)(yaml@2.8.3))
-
-  packages/slack-event-transport:
-    dependencies:
-      cyrus-core:
-        specifier: workspace:*
-        version: link:../core
-      fastify:
-        specifier: ^5.12.7
-        version: 5.12.7
-    devDependencies:
-      '@types/node':
-        specifier: ^20.0.0
-        version: 20.19.39
-      '@typescript/native-preview':
-        specifier: 7.0.0-dev.20260707.2
-        version: 7.0.0-dev.20260707.2
-      vitest:
-        specifier: ^4.1.12
-        version: 4.1.12(@opentelemetry/api@1.9.1)(@types/node@20.19.39)(@vitest/coverage-v8@4.1.12)(@vitest/ui@4.1.12)(vite@8.3.4(@types/node@20.19.39)(esbuild@0.28.1)(tsx@4.23.0)(yaml@2.8.3))
-
-  packages/zulip-event-transport:
-    dependencies:
-      cyrus-core:
-        specifier: workspace:*
-        version: link:../core
-      fastify:
-        specifier: ^5.12.7
-        version: 5.12.7
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
