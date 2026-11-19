@@ -73,7 +73,7 @@ The native-rule smoke test used `workspace-write` and approval policy `never`.
 Chrome and Brave passed open/title/screenshot/close, while an unrelated Python
 command was denied a write outside the workspace. This verified an unattended
 Codex session, not a new real Linear session using the rule. The earlier Linear
-and F1 records describe the superseded launcher prototype.
+records describe the superseded launcher prototype.
 
 ## Filesystem settings and broader alternatives
 

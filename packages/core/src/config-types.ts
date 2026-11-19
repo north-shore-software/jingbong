@@ -121,23 +121,6 @@ export interface EdgeWorkerRuntimeConfig {
 	/** Server host address ('localhost' or '0.0.0.0', default: 'localhost') */
 	serverHost?: string;
 
-	// --- Platform Configuration ---
-
-	/**
-	 * Issue tracker platform type (default: "linear")
-	 * - "linear": Uses Linear as the issue tracker (default production mode)
-	 * - "cli": Uses an in-memory issue tracker for CLI-based testing and development
-	 */
-	platform?: "linear" | "cli";
-
-	// --- Agent Configuration (for CLI mode) ---
-
-	/** The name/handle the agent responds to (e.g., "john", "cyrus") */
-	agentHandle?: string;
-
-	/** The user ID of the agent (for CLI mode) */
-	agentUserId?: string;
-
 	// --- Runtime Handlers (non-serializable callbacks) ---
 
 	/**

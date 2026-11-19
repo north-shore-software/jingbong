@@ -40,11 +40,7 @@ change. Follow repository-specific checks and CI gates where applicable.
 - **Review** — Check correctness, scope, and maintainability, including whether
   proposed tests provide useful protection.
 
-Where the repository uses F1, apply its canonical
-`skills/f1-test-drive/SKILL.md` applicability policy before invoking a drive or
-requesting evidence. Nonapplicable changes need proportionate checks and a brief
-PR note, without an F1 run or report. Do not infer an F1 requirement from this
-skill. Preserve existing safeguards for consequential failures.
+Preserve existing safeguards for consequential failures.
 
 ## 3. Changelog Update
 

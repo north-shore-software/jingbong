@@ -37,8 +37,7 @@ export type AskUserQuestionInput = SDKAskUserQuestionInput;
  * hook (`session_crons` / `background_tasks` on `StopHookInput`). These are
  * the only signals that distinguish "session is done" from "session is
  * paused waiting to be woken" — the message stream itself (including the
- * `result` message) carries no pending-work information. See the F1 test
- * drive `2026-06-11-cypack-1310-schedulewakeup.md` for the evidence.
+ * `result` message) carries no pending-work information.
  */
 export interface AgentPendingWork {
 	/**
