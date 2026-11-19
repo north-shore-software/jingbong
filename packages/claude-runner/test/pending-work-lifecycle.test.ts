@@ -34,7 +34,7 @@ import type { ClaudeRunnerConfig } from "../src/types";
  * CLI subprocess. Completing the streaming prompt on `result` closes the
  * CLI's stdin and the timer dies with it. The only signal that pending work
  * exists is the Stop hook's `session_crons`/`background_tasks` — verified
- * empirically (see apps/f1/test-drives/2026-06-11-cypack-1310-schedulewakeup.md):
+ * empirically:
  * the message stream itself is identical with and without pending wakeups.
  *
  * These tests emulate the real CLI contract:

@@ -53,17 +53,9 @@ A typical session flow:
 [AgentSessionManager] Subroutine completed, advancing to next: verifications
 ```
 
-### Test Drives
+### Validation
 
-To see Cyrus in action, refer to the test drives in `apps/f1/test-drives/`. These documents showcase real interactions demonstrating:
-- How issues are processed end-to-end
-- Mid-implementation prompting in action
-- Subroutine transitions and activity logging
-- Final repository state after completion
-
-The F1 (Formula 1) testing framework provides a controlled environment to test Cyrus without affecting production Linear workspaces.
-
-Choose validation by the actual changed behavior, not the size of the task or filenames. Follow the canonical [F1 applicability policy](skills/f1-test-drive/SKILL.md#applicability-required-before-setup): F1-covered product/runtime changes and functional changes to the F1 harness require relevant F1 validation. Changes with no relevant workflow behavior use targeted checks and a brief PR validation note, without running F1 or creating, attaching, or committing an F1 report. For releases, assess the full payload since the previous release, not just the release PR. Preserve historical test-drive evidence.
+Choose validation by the actual changed behavior, not the size of the task or filenames. There is no end-to-end harness; for workflow changes, validate against a real Linear workspace when unit tests can't cover the behavior, and note what was checked in the PR.
 
 ## Comment Mode (Jingbong)
 
@@ -99,7 +91,7 @@ When examining or working with a package SDK:
 
 ## Shared Skills Across Harnesses
 
-For reusable operational workflows (for example F1 test driving), keep a canonical skill in:
+For reusable operational workflows (for example verify-and-ship), keep a canonical skill in:
 
 - `skills/<skill-name>/SKILL.md`
 
@@ -199,7 +191,7 @@ When implementing a new runner/harness (for example Codex, Gemini, OpenCode, or 
 
 - Run unit tests for new runner adapters and formatter behavior.
 - Run replay tests from real CLI transcripts.
-- Validate F1 end-to-end scenarios for:
+- Validate end-to-end in a real Linear workspace for:
   - label-based runner/model selection
   - description selector-based runner/model selection
   - visible tool/file-edit activities in session timeline
@@ -268,8 +260,7 @@ ongoing protection outweighs maintenance. Avoid brittle text/source assertions,
 implementation-mirroring tests, and scaffolding that costs more than it protects.
 Preserve safeguards against wrong artifact publication, unintended stable-tag
 moves, invalid release evidence, and other consequential regressions. Choose by
-behavior and risk, never filenames alone; retain required CI gates and relevant
-functional F1 validation.
+behavior and risk, never filenames alone; retain required CI gates.
 
 ### Prompt Assembly Tests
 

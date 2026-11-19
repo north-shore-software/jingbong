@@ -52,20 +52,12 @@ export interface LinearProxyEventTransportConfig
 }
 
 /**
- * Configuration for CLI event transport (in-memory mode).
- */
-export interface CLIEventTransportConfig extends AgentEventTransportConfigBase {
-	platform: "cli";
-}
-
-/**
  * Discriminated union of all event transport configurations.
  * Platform-specific config values are only required when using that platform.
  */
 export type AgentEventTransportConfig =
 	| LinearDirectEventTransportConfig
-	| LinearProxyEventTransportConfig
-	| CLIEventTransportConfig;
+	| LinearProxyEventTransportConfig;
 
 /**
  * Event handlers for agent event transport.

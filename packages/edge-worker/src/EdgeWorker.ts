@@ -56,8 +56,6 @@ import type {
 	WebhookIssue,
 } from "cyrus-core";
 import {
-	CLIIssueTrackerService,
-	CLIRPCServer,
 	createLogger,
 	GitHubTokenStore,
 	isAgentSessionCreatedWebhook,
@@ -196,7 +194,6 @@ export class EdgeWorker extends EventEmitter {
 	private gitHubEventTransport: GitHubEventTransport | null = null; // GitHub event transport for forwarded GitHub webhooks
 	private gitHubAppTokenProvider: GitHubAppTokenProvider | null = null; // Self-hosted GitHub App token minting
 	private gitHubCommentService: GitHubCommentService; // Service for posting comments back to GitHub PRs
-	private cliRPCServer: CLIRPCServer | null = null; // CLI RPC server for CLI platform mode
 	private configUpdater: ConfigUpdater | null = null; // Single config updater for configuration updates
 	private persistenceManager: PersistenceManager;
 	private sharedApplicationServer: SharedApplicationServer;
@@ -469,11 +466,9 @@ export class EdgeWorker extends EventEmitter {
 		// Initialize shared application server
 		const serverPort = config.serverPort || config.webhookPort || 3456;
 		const serverHost = config.serverHost || "localhost";
-		const skipTunnel = config.platform === "cli"; // Skip Cloudflare tunnel in CLI mode
 		this.sharedApplicationServer = new SharedApplicationServer(
 			serverPort,
 			serverHost,
-			skipTunnel,
 		);
 
 		// Create single AgentSessionManager instance shared across all repositories
@@ -533,19 +528,12 @@ export class EdgeWorker extends EventEmitter {
 			for (const [linearWorkspaceId, wsConfig] of Object.entries(
 				config.linearWorkspaces,
 			)) {
-				const issueTracker =
-					this.config.platform === "cli"
-						? (() => {
-								const service = new CLIIssueTrackerService();
-								service.seedDefaultData();
-								return service;
-							})()
-						: new LinearIssueTrackerService(
-								new LinearClient({
-									accessToken: wsConfig.linearToken,
-								}),
-								this.buildOAuthConfig(linearWorkspaceId),
-							);
+				const issueTracker = new LinearIssueTrackerService(
+					new LinearClient({
+						accessToken: wsConfig.linearToken,
+					}),
+					this.buildOAuthConfig(linearWorkspaceId),
+				);
 				this.issueTrackers.set(linearWorkspaceId, issueTracker);
 			}
 		}
@@ -764,118 +752,51 @@ export class EdgeWorker extends EventEmitter {
 	 * Initialize and register components (routes) before server starts
 	 */
 	private async initializeComponents(): Promise<void> {
-		// 1. Platform-specific initialization
-		if (this.config.platform === "cli") {
-			// CLI mode: ensure a CLIIssueTrackerService exists for each repo workspace.
-			// Repos from config.repositories don't go through linearWorkspaces init,
-			// so we create trackers here if missing.
-			for (const [repoId, repo] of this.repositories) {
-				const wsId = repo.linearWorkspaceId;
-				if (wsId && !this.issueTrackers.has(wsId)) {
-					const service = new CLIIssueTrackerService();
-					service.seedDefaultData();
-					this.issueTrackers.set(wsId, service);
-					const activitySink = new LinearActivitySink(service, wsId);
-					this.activitySinks.set(repoId, activitySink);
-				}
-			}
+		// 1. Linear event transport
+		const useDirectWebhooks =
+			process.env.LINEAR_DIRECT_WEBHOOKS?.toLowerCase() === "true";
+		const verificationMode = useDirectWebhooks ? "direct" : "proxy";
 
-			const firstCliTracker = Array.from(this.issueTrackers.values()).find(
-				(tracker): tracker is CLIIssueTrackerService =>
-					tracker instanceof CLIIssueTrackerService,
-			);
+		// Get appropriate secret based on mode
+		const secret = useDirectWebhooks
+			? process.env.LINEAR_WEBHOOK_SECRET || ""
+			: process.env.CYRUS_API_KEY || "";
 
-			if (firstCliTracker) {
-				this.cliRPCServer = new CLIRPCServer({
-					fastifyServer: this.sharedApplicationServer.getFastifyInstance(),
-					issueTracker: firstCliTracker,
-					version: "1.0.0",
-				});
+		this.linearEventTransport = new LinearEventTransport({
+			fastifyServer: this.sharedApplicationServer.getFastifyInstance(),
+			verificationMode,
+			secret,
+			ipAllowlist:
+				verificationMode === "direct" && this.webhookIpValidator.isEnabled()
+					? this.webhookIpValidator.getAllowlist("linear")
+					: undefined,
+		});
 
-				// Register the /cli/rpc endpoint
-				this.cliRPCServer.register();
+		// Listen for legacy webhook events (deprecated, kept for backward compatibility)
+		this.linearEventTransport.on("event", (event: AgentEvent) => {
+			const repos = Array.from(this.repositories.values());
+			this.handleWebhook(event as unknown as Webhook, repos);
+		});
 
-				this.logger.info("✅ CLI RPC server registered");
-				this.logger.info("   RPC endpoint: /cli/rpc");
+		// Listen for unified internal messages (new message bus)
+		this.linearEventTransport.on("message", (message: InternalMessage) => {
+			this.handleMessage(message);
+		});
 
-				// Create CLI event transport and register listener
-				const cliEventTransport = firstCliTracker.createEventTransport({
-					platform: "cli",
-					fastifyServer: this.sharedApplicationServer.getFastifyInstance(),
-				});
+		// Listen for errors
+		this.linearEventTransport.on("error", (error: Error) => {
+			this.handleError(error);
+		});
 
-				// Listen for webhook events
-				cliEventTransport.on("event", (event: AgentEvent) => {
-					const repos = Array.from(this.repositories.values());
-					this.handleWebhook(event as unknown as Webhook, repos);
-				});
+		// Register the /linear-webhook endpoint (with /webhook retained as a deprecated alias)
+		this.linearEventTransport.register();
 
-				// Listen for unified internal messages (used by F1 to emit
-				// IssueStateChangeMessage when an issue is terminated).
-				cliEventTransport.on("message", (message: InternalMessage) => {
-					this.handleMessage(message);
-				});
-
-				// Listen for errors
-				cliEventTransport.on("error", (error: Error) => {
-					this.handleError(error);
-				});
-
-				// Register the CLI event transport endpoints
-				cliEventTransport.register();
-
-				this.logger.info("✅ CLI event transport registered");
-				this.logger.info(
-					"   Event listener: listening for AgentSessionCreated events",
-				);
-			}
-		} else {
-			// Linear mode: Create and register LinearEventTransport
-			const useDirectWebhooks =
-				process.env.LINEAR_DIRECT_WEBHOOKS?.toLowerCase() === "true";
-			const verificationMode = useDirectWebhooks ? "direct" : "proxy";
-
-			// Get appropriate secret based on mode
-			const secret = useDirectWebhooks
-				? process.env.LINEAR_WEBHOOK_SECRET || ""
-				: process.env.CYRUS_API_KEY || "";
-
-			this.linearEventTransport = new LinearEventTransport({
-				fastifyServer: this.sharedApplicationServer.getFastifyInstance(),
-				verificationMode,
-				secret,
-				ipAllowlist:
-					verificationMode === "direct" && this.webhookIpValidator.isEnabled()
-						? this.webhookIpValidator.getAllowlist("linear")
-						: undefined,
-			});
-
-			// Listen for legacy webhook events (deprecated, kept for backward compatibility)
-			this.linearEventTransport.on("event", (event: AgentEvent) => {
-				const repos = Array.from(this.repositories.values());
-				this.handleWebhook(event as unknown as Webhook, repos);
-			});
-
-			// Listen for unified internal messages (new message bus)
-			this.linearEventTransport.on("message", (message: InternalMessage) => {
-				this.handleMessage(message);
-			});
-
-			// Listen for errors
-			this.linearEventTransport.on("error", (error: Error) => {
-				this.handleError(error);
-			});
-
-			// Register the /linear-webhook endpoint (with /webhook retained as a deprecated alias)
-			this.linearEventTransport.register();
-
-			this.logger.info(
-				`✅ Linear event transport registered (${verificationMode} mode)`,
-			);
-			this.logger.info(
-				`   Webhook endpoint: ${this.sharedApplicationServer.getWebhookUrl()}`,
-			);
-		}
+		this.logger.info(
+			`✅ Linear event transport registered (${verificationMode} mode)`,
+		);
+		this.logger.info(
+			`   Webhook endpoint: ${this.sharedApplicationServer.getWebhookUrl()}`,
+		);
 
 		// 2. Register GitHub event transport unconditionally
 		// It doesn't require repositories and must be available during onboarding
@@ -1941,14 +1862,6 @@ ${taskSection}`;
 	}
 
 	/**
-	 * Public accessor for the shared Fastify-based application server.
-	 * Used by F1 to register test-only routes alongside production webhook routes.
-	 */
-	getSharedApplicationServer(): SharedApplicationServer {
-		return this.sharedApplicationServer;
-	}
-
-	/**
 	 * Stop the edge worker
 	 */
 	async stop(): Promise<void> {
@@ -2283,7 +2196,7 @@ ${taskSection}`;
 				this.logger.info(
 					`🔑 Updated Linear token for workspace ${workspaceId}`,
 				);
-			} else if (this.config.platform !== "cli") {
+			} else {
 				// Workspace is new — create a tracker and activity sink for it
 				const newIssueTracker = new LinearIssueTrackerService(
 					new LinearClient({ accessToken: newToken }),
